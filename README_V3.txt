@@ -1,0 +1,1 @@
+MotoQuest v3.0 blueprint. Add discovered_voivodeships jsonb column in players table. Add leaderboard panel import to page.tsx. Implement cloud sync.
