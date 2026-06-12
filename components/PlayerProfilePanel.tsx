@@ -1,0 +1,198 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { getActiveBike } from "../lib/garage";
+import { getProfile, PlayerProfile, saveProfile } from "../lib/profile";
+import { savePlayer } from "../lib/playerService";
+import { getNumber, STORAGE_KEYS } from "../lib/storage";
+import { supabase } from "../lib/supabase";
+import type { PlayerStats } from "../lib/usePlayerStats";
+
+type PlayerProfilePanelProps = {
+  stats: PlayerStats;
+};
+
+export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
+  const [profile, setProfile] = useState<PlayerProfile>({
+    avatarUrl: "",
+    nickname: "MotoManiak",
+  });
+  const [nickname, setNickname] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    const savedProfile = getProfile();
+
+    setProfile(savedProfile);
+    setNickname(savedProfile.nickname);
+  }, []);
+
+  const activeBike = getActiveBike();
+  const distanceKm = getNumber(STORAGE_KEYS.distance);
+
+  const syncPlayer = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await savePlayer(user.id);
+    }
+  };
+
+  const updateProfile = async (nextProfile: PlayerProfile) => {
+    saveProfile(nextProfile);
+    setProfile(nextProfile);
+    setNickname(nextProfile.nickname);
+    await syncPlayer();
+  };
+
+  const saveNickname = async () => {
+    setStatus("");
+    await updateProfile({
+      ...profile,
+      nickname,
+    });
+    setStatus("Profil zapisany");
+  };
+
+  const uploadAvatar = async (file: File) => {
+    setStatus("");
+    setUploadingAvatar(true);
+
+    try {
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, "-");
+      const fileName = `${Date.now()}-${safeName}`;
+
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file);
+
+      if (error) {
+        console.error(error);
+        setStatus("Nie udało się wysłać avatara. Sprawdź bucket avatars.");
+        return;
+      }
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
+
+      await updateProfile({
+        ...profile,
+        avatarUrl: data.publicUrl,
+      });
+
+      setStatus("Avatar zapisany");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  return (
+    <section className="rounded-3xl border border-orange-500/25 bg-zinc-950 p-5">
+      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 text-center">
+          <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-orange-500 bg-zinc-800">
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-4xl font-black text-orange-500">
+                {profile.nickname.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 text-2xl font-black text-white">
+            {profile.nickname}
+          </div>
+          <div className="mt-1 text-sm text-zinc-400">LVL {stats.level}</div>
+
+          <label className="mt-4 block cursor-pointer rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-bold text-zinc-200 hover:border-orange-500">
+            {uploadingAvatar ? "Wysyłanie..." : "Zmień avatar"}
+            <input
+              type="file"
+              accept="image/*"
+              disabled={uploadingAvatar}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+
+                if (file) {
+                  void uploadAvatar(file);
+                }
+              }}
+              className="hidden"
+            />
+          </label>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+            <label className="text-xs font-bold uppercase text-zinc-500">
+              Nick
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="min-w-0 flex-1 rounded-xl bg-zinc-800 px-4 py-3"
+              />
+              <button
+                type="button"
+                onClick={saveNickname}
+                className="rounded-xl bg-orange-500 px-5 py-3 font-bold text-black hover:bg-orange-600"
+              >
+                Zapisz
+              </button>
+            </div>
+            {status && <div className="mt-2 text-sm text-orange-400">{status}</div>}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <ProfileMetric label="XP" value={String(stats.xp)} />
+            <ProfileMetric label="Kafelki" value={String(stats.tiles)} />
+            <ProfileMetric label="Miejscowości" value={String(stats.towns)} />
+            <ProfileMetric label="Przebieg" value={`${distanceKm.toFixed(1)} km`} />
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+            <div className="text-xs font-bold uppercase text-zinc-500">
+              Aktywny motocykl
+            </div>
+            <div className="mt-2 text-xl font-black text-white">
+              {activeBike
+                ? `${activeBike.brand} ${activeBike.model}`
+                : "Brak aktywnego motocykla"}
+            </div>
+            {activeBike && (
+              <div className="mt-1 text-sm text-zinc-400">
+                {activeBike.totalDistanceKm.toFixed(1)} km na tej maszynie
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProfileMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+      <div className="text-[10px] font-bold uppercase text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-black text-orange-500">{value}</div>
+    </div>
+  );
+}

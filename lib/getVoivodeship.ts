@@ -4,7 +4,12 @@ export async function getVoivodeship(
 ) {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+      {
+        headers: {
+          "Accept-Language": "pl",
+        },
+      }
     );
 
     const data = await res.json();
@@ -14,6 +19,7 @@ export async function getVoivodeship(
       "Nieznane";
 
     return voivodeship
+      .replace(/^województwo\s+/i, "")
       .split(" ")
       .map(
         (word: string) =>

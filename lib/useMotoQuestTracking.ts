@@ -1,0 +1,254 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import maplibregl from "maplibre-gl";
+
+import { unlockAchievement } from "./achievements";
+import { calculateDistanceKm } from "./distance";
+import { addDistanceToActiveBike } from "./garage";
+import { getVoivodeship } from "./getVoivodeship";
+import { savePlayer } from "./playerService";
+import { getTownName } from "./reverseGeocode";
+import {
+  addUniqueString,
+  getJson,
+  getNumber,
+  setJson,
+  setNumber,
+  STORAGE_KEYS,
+} from "./storage";
+import { getTileId } from "./tiles";
+import { appendActiveTripPoint } from "./trips";
+import { supabase } from "./supabase";
+
+type Position = {
+  lat: number;
+  lon: number;
+};
+
+type UseMotoQuestTrackingParams = {
+  addTileLayer: (map: maplibregl.Map, tileId: string) => void;
+  map: maplibregl.Map | null;
+};
+
+export function useMotoQuestTracking({
+  addTileLayer,
+  map,
+}: UseMotoQuestTrackingParams) {
+  const markerRef = useRef<maplibregl.Marker | null>(null);
+  const userIdRef = useRef("");
+  const lastPositionRef = useRef<Position | null>(null);
+  const discoveredTilesRef = useRef(
+    new Set<string>(getJson<string[]>(STORAGE_KEYS.tiles, []))
+  );
+
+  const [tilesCount, setTilesCount] = useState(0);
+  const [currentTown, setCurrentTown] = useState("Ładowanie...");
+  const [currentVoivodeship, setCurrentVoivodeship] = useState("Nieznane");
+  const [newVoivodeshipPopup, setNewVoivodeshipPopup] = useState<string | null>(
+    null
+  );
+  const [distanceKm, setDistanceKm] = useState(0);
+
+  useEffect(() => {
+    async function initUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        userIdRef.current = user.id;
+      }
+    }
+
+    initUser();
+  }, []);
+
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
+    discoveredTilesRef.current.forEach((tileId) => {
+      addTileLayer(map, tileId);
+    });
+
+    setTilesCount(discoveredTilesRef.current.size);
+    setDistanceKm(getNumber(STORAGE_KEYS.distance));
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        void handlePosition(position, map);
+      },
+      console.error,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+      }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [addTileLayer, map]);
+
+  async function handlePosition(
+    position: GeolocationPosition,
+    map: maplibregl.Map
+  ) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    appendActiveTripPoint({
+      accuracy: position.coords.accuracy ?? null,
+      lat,
+      lon,
+      speedKmh:
+        typeof position.coords.speed === "number" &&
+        Number.isFinite(position.coords.speed)
+          ? position.coords.speed * 3.6
+          : null,
+      timestamp: position.timestamp || Date.now(),
+    });
+
+    updateDistance({
+      lat,
+      lon,
+    });
+
+    updateMapPosition(map, {
+      lat,
+      lon,
+    });
+
+    let progressChanged = false;
+
+    const town = await getTownName(lat, lon);
+    setCurrentTown(town);
+
+    if (town !== "Nieznana") {
+      const result = addUniqueString(STORAGE_KEYS.towns, town);
+
+      if (result.added) {
+        progressChanged = true;
+        unlockAchievement("first-town", "Pierwsza miejscowość", 100);
+      }
+    }
+
+    const voivodeship = await getVoivodeship(lat, lon);
+    setCurrentVoivodeship(voivodeship);
+
+    if (voivodeship !== "Nieznane") {
+      const result = addUniqueString(STORAGE_KEYS.voivodeships, voivodeship);
+
+      if (result.added) {
+        progressChanged = true;
+        showVoivodeshipPopup(voivodeship);
+        window.dispatchEvent(new Event("mq-voivodeships-updated"));
+        unlockAchievement("first-voivodeship", "Pierwsze województwo", 500);
+      }
+    }
+
+    const tileChanged = discoverTile(lat, lon, map);
+
+    if ((progressChanged || tileChanged) && userIdRef.current) {
+      await savePlayer(userIdRef.current);
+    }
+  }
+
+  function updateDistance(position: Position) {
+    if (!lastPositionRef.current) {
+      lastPositionRef.current = position;
+      return;
+    }
+
+    const km = calculateDistanceKm(
+      lastPositionRef.current.lat,
+      lastPositionRef.current.lon,
+      position.lat,
+      position.lon
+    );
+
+    lastPositionRef.current = position;
+
+    if (km >= 2) {
+      return;
+    }
+
+    const newDistance = getNumber(STORAGE_KEYS.distance) + km;
+    setNumber(STORAGE_KEYS.distance, newDistance);
+    addDistanceToActiveBike(km);
+
+    unlockDistanceAchievements(newDistance);
+    setDistanceKm(Number(newDistance.toFixed(2)));
+  }
+
+  function updateMapPosition(map: maplibregl.Map, position: Position) {
+    map.flyTo({
+      center: [position.lon, position.lat],
+      zoom: 15,
+      duration: 500,
+    });
+
+    if (!markerRef.current) {
+      markerRef.current = new maplibregl.Marker({
+        color: "#ff6b00",
+      })
+        .setLngLat([position.lon, position.lat])
+        .addTo(map);
+
+      return;
+    }
+
+    markerRef.current.setLngLat([position.lon, position.lat]);
+  }
+
+  function discoverTile(lat: number, lon: number, map: maplibregl.Map) {
+    const tileId = getTileId(lat, lon);
+
+    if (discoveredTilesRef.current.has(tileId)) {
+      return false;
+    }
+
+    discoveredTilesRef.current.add(tileId);
+    setJson(STORAGE_KEYS.tiles, [...discoveredTilesRef.current]);
+    setTilesCount(discoveredTilesRef.current.size);
+    addTileLayer(map, tileId);
+
+    return true;
+  }
+
+  function showVoivodeshipPopup(voivodeship: string) {
+    setNewVoivodeshipPopup(voivodeship);
+
+    setTimeout(() => {
+      setNewVoivodeshipPopup(null);
+    }, 4000);
+  }
+
+  return {
+    currentTown,
+    currentVoivodeship,
+    distanceKm,
+    newVoivodeshipPopup,
+    tilesCount,
+  };
+}
+
+function unlockDistanceAchievements(distanceKm: number) {
+  if (distanceKm >= 1) {
+    unlockAchievement("distance-1", "Pierwszy kilometr", 100);
+  }
+
+  if (distanceKm >= 100) {
+    unlockAchievement("distance-100", "100 km", 500);
+  }
+
+  if (distanceKm >= 1000) {
+    unlockAchievement("distance-1000", "1000 km", 2500);
+  }
+
+  if (distanceKm >= 10000) {
+    unlockAchievement("distance-10000", "10000 km", 10000);
+  }
+}
