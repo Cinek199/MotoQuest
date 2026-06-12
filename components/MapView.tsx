@@ -500,258 +500,81 @@ window.dispatchEvent(
         }
       );
 
-    return () => {
-      navigator.geolocation.clearWatch(
-        watchId
-      );
-      map.remove();
-    };
-  }, []);
+    
+return (
+<div className="space-y-5">
 
-  return (
-  <div className="space-y-4">
-
-    <div className="bg-zinc-900 rounded-3xl p-4 border border-orange-500">
-
-      <div className="font-bold text-orange-500 mb-3">
-        🧪 DEV PANEL
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-
-        <button
-  onClick={() => {
-
-    const discovered =
-      JSON.parse(
-        localStorage.getItem(
-          "mq_voivodeships"
-        ) || "[]"
-      );
-
-    if (
-      !discovered.includes(
-        "Mazowieckie"
-      )
-    ) {
-      discovered.push(
-        "Mazowieckie"
-      );
-
-      localStorage.setItem(
-        "mq_voivodeships",
-        JSON.stringify(
-          discovered
-        )
-      );
-
-      window.dispatchEvent(
-        new Event(
-          "mq-voivodeships-updated"
-        )
-      );
-    }
-
-    setCurrentVoivodeship(
-      "Mazowieckie"
-    );
-
-    setNewVoivodeshipPopup(
-      "Mazowieckie"
-    );
-
-    setTimeout(() => {
-      setNewVoivodeshipPopup(
-        null
-      );
-    }, 4000);
-  }}
-  className="bg-zinc-800 rounded-lg p-2"
->
-  Warszawa
-</button>
-
-        <button
-          onClick={() => {
-            setCurrentVoivodeship(
-              "Małopolskie"
-            );
-
-            setNewVoivodeshipPopup(
-              "Małopolskie"
-            );
-
-            setTimeout(() => {
-              setNewVoivodeshipPopup(
-                null
-              );
-            }, 4000);
-          }}
-          className="bg-zinc-800 rounded-lg p-2"
-        >
-          Kraków
-        </button>
-
-        <button
-          onClick={() => {
-            setCurrentVoivodeship(
-              "Pomorskie"
-            );
-
-            setNewVoivodeshipPopup(
-              "Pomorskie"
-            );
-
-            setTimeout(() => {
-              setNewVoivodeshipPopup(
-                null
-              );
-            }, 4000);
-          }}
-          className="bg-zinc-800 rounded-lg p-2"
-        >
-          Gdańsk
-        </button>
-
-        <button
-          onClick={() => {
-            setCurrentVoivodeship(
-              "Dolnośląskie"
-            );
-
-            setNewVoivodeshipPopup(
-              "Dolnośląskie"
-            );
-
-            setTimeout(() => {
-              setNewVoivodeshipPopup(
-                null
-              );
-            }, 4000);
-          }}
-          className="bg-zinc-800 rounded-lg p-2"
-        >
-          Wrocław
-        </button>
-
-        <button
-          onClick={() => {
-            setCurrentVoivodeship(
-              "Podlaskie"
-            );
-
-            setNewVoivodeshipPopup(
-              "Podlaskie"
-            );
-
-            setTimeout(() => {
-              setNewVoivodeshipPopup(
-                null
-              );
-            }, 4000);
-          }}
-          className="bg-zinc-800 rounded-lg p-2"
-        >
-          Białystok
-        </button>
-
-        <button
-          onClick={() => {
-            setCurrentVoivodeship(
-              "Lubelskie"
-            );
-
-            setNewVoivodeshipPopup(
-              "Lubelskie"
-            );
-
-            setTimeout(() => {
-              setNewVoivodeshipPopup(
-                null
-              );
-            }, 4000);
-          }}
-          className="bg-zinc-800 rounded-lg p-2"
-        >
-          Lublin
-        </button>
-
-      </div>
-
+  <div className="bg-gradient-to-r from-zinc-900 to-black border border-orange-500/30 rounded-3xl p-6">
+    <div className="text-zinc-500 text-sm uppercase tracking-widest">
+      MotoQuest
     </div>
-      <div className="bg-zinc-900 rounded-3xl p-4 border border-zinc-800">
-  <div className="text-sm text-zinc-400">
-    Województwo
+
+    <div className="flex items-center justify-between mt-2">
+      <div>
+        <div className="text-3xl font-bold text-white">
+          Odkrywaj Polskę
+        </div>
+        <div className="text-zinc-400 mt-1">
+          {currentTown} • {currentVoivodeship}
+        </div>
+      </div>
+
+      <div className="text-right">
+        <div className="text-zinc-500 text-xs">
+          PRZEBIEG
+        </div>
+        <div className="text-2xl font-bold text-orange-500">
+          {distanceKm.toFixed(1)} km
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div className="text-4xl font-bold text-orange-500">
-    {currentVoivodeship}
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+      <div className="text-zinc-500 text-xs">KAFELKI</div>
+      <div className="text-2xl font-bold text-orange-500">{tilesCount}</div>
+    </div>
+
+    <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+      <div className="text-zinc-500 text-xs">POWIERZCHNIA</div>
+      <div className="text-2xl font-bold text-orange-500">
+        {(tilesCount * 0.25).toFixed(1)} km²
+      </div>
+    </div>
+
+    <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+      <div className="text-zinc-500 text-xs">MIASTO</div>
+      <div className="font-bold text-white">{currentTown}</div>
+    </div>
+
+    <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+      <div className="text-zinc-500 text-xs">WOJEWÓDZTWO</div>
+      <div className="font-bold text-white">{currentVoivodeship}</div>
+    </div>
   </div>
+
+  <div className="relative">
+    <div
+      ref={mapContainer}
+      className="w-full h-[75vh] rounded-3xl overflow-hidden border border-zinc-800"
+    />
+  </div>
+
+  {newVoivodeshipPopup && (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+      <div className="bg-zinc-900 border border-orange-500 rounded-3xl p-8 text-center">
+        <div className="text-6xl">🎉</div>
+        <div className="text-zinc-400 mt-3">
+          Odkryto nowe województwo
+        </div>
+        <div className="text-3xl font-bold text-orange-500 mt-2">
+          {newVoivodeshipPopup}
+        </div>
+      </div>
+    </div>
+  )}
 </div>
-      <div className="bg-zinc-900 rounded-3xl p-4 border border-zinc-800">
-        <div className="text-sm text-zinc-400">
-          Aktualna miejscowość
-        </div>
+);
 
-        <div className="text-4xl font-bold text-orange-500">
-          {currentTown}
-        </div>
-      </div>
-
-      <div className="bg-zinc-900 rounded-3xl p-4 border border-zinc-800">
-        <div className="text-sm text-zinc-400">
-          Odkryte kafelki
-        </div>
-        <div className="bg-zinc-900 rounded-3xl p-4 border border-zinc-800">
-  <div className="text-sm text-zinc-400">
-    🏍 Przebieg
-  </div>
-
-  <div className="text-4xl font-bold text-orange-500">
-    {distanceKm.toFixed(2)} km
-  </div>
-</div>
-
-        <div className="text-4xl font-bold text-orange-500">
-          {tilesCount}
-        </div>
-
-        <div className="text-sm text-zinc-500">
-          Powierzchnia{" "}
-          {(tilesCount * 0.25).toFixed(2)}
-          {" "}km²
-        </div>
-      </div>
-
-      <div
-        ref={mapContainer}
-        className="w-full h-[650px] rounded-3xl overflow-hidden"
-      />
-      {newVoivodeshipPopup && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
-
-    <div className="bg-zinc-900 border border-orange-500 rounded-3xl p-8 text-center max-w-md mx-4 animate-pulse">
-
-      <div className="text-6xl mb-4">
-        🎉
-      </div>
-
-      <div className="text-zinc-400 text-sm uppercase tracking-widest">
-        Odkryto nowe województwo
-      </div>
-
-      <div className="text-3xl font-bold text-orange-500 mt-3">
-        {newVoivodeshipPopup}
-      </div>
-
-      <div className="text-2xl font-bold mt-6 text-green-400">
-        +500 XP
-      </div>
-
-    </div>
-
-  </div>
-)}
-    </div>
-  );
 }
