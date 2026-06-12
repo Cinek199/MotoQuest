@@ -80,7 +80,10 @@ export function useMotoQuestTracking({
       (position) => {
         void handlePosition(position, map);
       },
-      console.error,
+      () => {
+        setCurrentTown("Brak GPS");
+        setCurrentVoivodeship("Nieznane");
+      },
       {
         enableHighAccuracy: true,
         maximumAge: 0,

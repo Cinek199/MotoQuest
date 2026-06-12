@@ -25,6 +25,7 @@ export type FinishedTrip = {
   distance: number;
   duration: number;
   endedAt: number;
+  id: string;
   name: string;
   route: TripRoutePoint[];
   startedAt: number;

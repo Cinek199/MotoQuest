@@ -7,78 +7,59 @@ interface Props {
   progress: number;
 }
 
-export default function SplashScreen({
-  status,
-  progress,
-}: Props) {
-  const [displayProgress,
-    setDisplayProgress] =
-    useState(0);
+export default function SplashScreen({ status, progress }: Props) {
+  const [displayProgress, setDisplayProgress] = useState(0);
 
   useEffect(() => {
-    const timer =
-      setInterval(() => {
-        setDisplayProgress(
-          prev => {
-            if (
-              prev >= progress
-            )
-              return prev;
+    const timer = setInterval(() => {
+      setDisplayProgress((prev) => {
+        if (prev >= progress) {
+          return prev;
+        }
 
-            return prev + 1;
-          }
-        );
-      }, 20);
+        return prev + 1;
+      });
+    }, 20);
 
-    return () =>
-      clearInterval(timer);
+    return () => clearInterval(timer);
   }, [progress]);
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[9999]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black px-6 text-white">
+      <div className="w-full max-w-sm text-center">
+        <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-[2rem] border border-orange-500/30 bg-orange-500/10 shadow-2xl shadow-orange-500/10">
+          <img
+            src="/icon-192.png"
+            alt="MotoQuest"
+            className="h-24 w-24 animate-pulse"
+          />
+        </div>
 
-      <img
-        src="/icon-192.png"
-        alt="MotoQuest"
-        className="w-32 h-32 mb-8 animate-pulse"
-      />
+        <h1 className="mt-8 text-5xl font-black tracking-normal">
+          Moto<span className="text-orange-500">Quest</span>
+        </h1>
 
-      <h1 className="text-5xl font-bold">
-        Moto
-        <span className="text-orange-500">
-          Quest
-        </span>
-      </h1>
+        <p className="mt-4 text-sm font-bold text-zinc-500">
+          Odkrywaj Polskę kilometr po kilometrze
+        </p>
 
-      <p className="text-zinc-500 mt-4">
-        Odkrywaj Polskę kilometr po kilometrze
-      </p>
+        <div className="mt-8 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4">
+          <div className="text-sm font-black text-orange-500">{status}</div>
 
-      <div className="mt-8 text-orange-500 font-medium">
-        {status}
+          <div className="mt-4 h-3 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-orange-500 transition-all duration-300"
+              style={{
+                width: `${displayProgress}%`,
+              }}
+            />
+          </div>
+
+          <div className="mt-2 text-sm font-black text-zinc-400">
+            {displayProgress}%
+          </div>
+        </div>
       </div>
-
-      <div className="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden mt-4">
-
-        <div
-          className="
-            h-full
-            bg-orange-500
-            transition-all
-            duration-300
-          "
-          style={{
-            width:
-              `${displayProgress}%`,
-          }}
-        />
-
-      </div>
-
-      <div className="text-zinc-400 mt-2">
-        {displayProgress}%
-      </div>
-
     </div>
   );
 }

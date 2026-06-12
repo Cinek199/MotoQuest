@@ -15,64 +15,135 @@ export default function MapHud({
   discoveredAreaKm2,
   tilesCount,
 }: MapHudProps) {
+  const explorationLevel = Math.min(100, Math.round((tilesCount / 500) * 100));
+  const gpsReady = currentTown !== "Ladowanie..." && currentTown !== "Nieznana";
+
   return (
     <>
-      <div className="pointer-events-none absolute left-3 right-3 top-3 z-20 sm:left-5 sm:right-5 sm:top-5">
-        <section className="rounded-3xl border border-orange-500/25 bg-black/60 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-orange-500">
-                MotoQuest
+      <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-orange-500/35 bg-black/80 text-sm font-black text-orange-500 shadow-2xl backdrop-blur-xl">
+            MQ
+          </div>
+
+          <div className="min-w-0 flex-1 text-center">
+            <div className="text-xl font-black leading-none text-white">
+              Moto<span className="text-orange-500">Quest</span>
+            </div>
+            <div className="mt-1 text-[10px] font-black uppercase tracking-[0.28em] text-zinc-400">
+              mapa odkrywania
+            </div>
+          </div>
+
+          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-700 bg-black/80 text-zinc-300 shadow-2xl backdrop-blur-xl">
+            <span className="h-4 w-4 rounded-full border-2 border-current" />
+          </div>
+        </div>
+
+        <section className="mt-4 overflow-hidden rounded-[1.6rem] border border-zinc-700/80 bg-black/78 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-orange-500/35 bg-orange-500/10">
+              <span className="h-4 w-4 rounded-sm border border-orange-400" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Odkrywasz
               </div>
-              <h1 className="mt-1 text-2xl font-black text-white sm:text-4xl">
-                Odkrywaj Polskę
-              </h1>
-              <div className="mt-2 truncate text-sm text-zinc-300 sm:text-base">
-                {currentTown} · {currentVoivodeship}
+              <div className="truncate text-sm font-black text-white">
+                {currentVoivodeship}
               </div>
             </div>
 
-            <div className="shrink-0 rounded-2xl border border-zinc-700 bg-zinc-950/70 px-4 py-3 text-right">
-              <div className="text-[10px] font-bold uppercase text-zinc-500">
-                Przebieg
+            <div className="w-24">
+              <div className="mb-1 text-right text-[10px] font-black text-green-400">
+                {explorationLevel}%
               </div>
-              <div className="mt-1 text-xl font-black text-orange-500 sm:text-2xl">
-                {distanceKm.toFixed(1)} km
+              <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className="h-full rounded-full bg-green-500"
+                  style={{ width: `${explorationLevel}%` }}
+                />
               </div>
             </div>
           </div>
         </section>
       </div>
 
-      <div className="pointer-events-none absolute bottom-4 left-3 right-3 z-20 sm:bottom-5 sm:left-5 sm:right-5">
-        <section className="grid grid-cols-2 gap-3 rounded-3xl border border-zinc-700/80 bg-black/65 p-3 shadow-2xl backdrop-blur-xl sm:grid-cols-4 sm:p-4">
-          <MapHudStat label="Kafelki" value={String(tilesCount)} />
-          <MapHudStat
-            label="Powierzchnia"
-            value={`${discoveredAreaKm2.toFixed(1)} km²`}
-          />
-          <MapHudStat label="Miasto" value={currentTown} />
-          <MapHudStat label="Województwo" value={currentVoivodeship} />
+      <div className="pointer-events-none absolute right-3 top-[180px] z-20 flex flex-col gap-3">
+        <HudRoundButton active={gpsReady} label="GPS" />
+        <HudRoundButton label="WAR" />
+        <div className="overflow-hidden rounded-full border border-zinc-700 bg-black/80 shadow-2xl backdrop-blur-xl">
+          <HudZoomButton label="+" />
+          <div className="h-px bg-zinc-800" />
+          <HudZoomButton label="-" />
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-3 bottom-24 z-20 sm:bottom-6">
+        <section className="overflow-hidden rounded-[1.7rem] border border-orange-500/35 bg-black/80 shadow-2xl backdrop-blur-xl">
+          <div className="grid grid-cols-3 divide-x divide-zinc-800">
+            <MapHudStat label="km" value={distanceKm.toFixed(1)} />
+            <MapHudStat label="kafelki" value={String(tilesCount)} />
+            <MapHudStat label="obszar" value={discoveredAreaKm2.toFixed(1)} />
+          </div>
+
+          <div className="border-t border-zinc-800 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-black text-white">
+                  {currentTown}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  aktualna pozycja
+                </div>
+              </div>
+              <div className="rounded-full border border-orange-500/35 bg-orange-500/10 px-4 py-2 text-xs font-black text-orange-400">
+                Gotowy do trasy
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </>
   );
 }
 
-function MapHudStat({
+function HudRoundButton({
+  active = false,
   label,
-  value,
 }: {
+  active?: boolean;
   label: string;
-  value: string;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-950/75 p-3">
-      <div className="text-[10px] font-bold uppercase text-zinc-500">
+    <div
+      className={[
+        "grid h-12 w-12 place-items-center rounded-full border bg-black/80 text-[10px] font-black shadow-2xl backdrop-blur-xl",
+        active
+          ? "border-green-500/45 text-green-400"
+          : "border-zinc-700 text-zinc-300",
+      ].join(" ")}
+    >
+      {label}
+    </div>
+  );
+}
+
+function HudZoomButton({ label }: { label: string }) {
+  return (
+    <div className="grid h-11 w-12 place-items-center text-xl font-black text-white">
+      {label}
+    </div>
+  );
+}
+
+function MapHudStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 p-3 text-center">
+      <div className="truncate text-lg font-black text-white">{value}</div>
+      <div className="mt-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">
         {label}
-      </div>
-      <div className="mt-1 truncate text-base font-black text-white">
-        {value}
       </div>
     </div>
   );

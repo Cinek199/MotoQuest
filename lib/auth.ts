@@ -5,7 +5,6 @@ export async function signInAnonymously() {
     await supabase.auth.signInAnonymously();
 
   if (error) {
-    console.error(error);
     return null;
   }
 

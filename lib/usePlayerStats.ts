@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { savePlayer } from "./playerService";
+import { unlockAchievement } from "./achievements";
 
 export interface PlayerStats {
   tiles: number;
@@ -35,6 +36,22 @@ export function usePlayerStats() {
         const towns = JSON.parse(
           localStorage.getItem("mq_towns") || "[]"
         ).length;
+
+        const voivodeships = JSON.parse(
+          localStorage.getItem("mq_voivodeships") || "[]"
+        ).length;
+        const trips = JSON.parse(
+          localStorage.getItem("mq_trips") || "[]"
+        ).length;
+        const distance = Number(localStorage.getItem("mq_distance") || "0");
+
+        unlockProgressAchievements({
+          distance,
+          tiles,
+          towns,
+          trips,
+          voivodeships,
+        });
 
         const achievements = JSON.parse(
           localStorage.getItem("mq_achievements") || "[]"
@@ -78,4 +95,54 @@ export function usePlayerStats() {
   }, []);
 
   return stats;
+}
+
+function unlockProgressAchievements({
+  distance,
+  tiles,
+  towns,
+  trips,
+  voivodeships,
+}: {
+  distance: number;
+  tiles: number;
+  towns: number;
+  trips: number;
+  voivodeships: number;
+}) {
+  if (towns >= 10) {
+    unlockAchievement("towns-10", "Lokalny odkrywca", 500);
+  }
+
+  if (towns >= 50) {
+    unlockAchievement("towns-50", "Miliony drog", 1500);
+  }
+
+  if (tiles >= 100) {
+    unlockAchievement("tiles-100", "Odkrywca kafelkow", 750);
+  }
+
+  if (tiles >= 1000) {
+    unlockAchievement("tiles-1000", "Kartograf MotoQuest", 3000);
+  }
+
+  if (voivodeships >= 8) {
+    unlockAchievement("voivodeships-8", "Pol Polski", 2500);
+  }
+
+  if (voivodeships >= 16) {
+    unlockAchievement("voivodeships-16", "Korona Polski", 7000);
+  }
+
+  if (distance >= 100) {
+    unlockAchievement("distance-100", "Setka na liczniku", 1000);
+  }
+
+  if (distance >= 1000) {
+    unlockAchievement("distance-1000", "Dlugodystansowiec", 5000);
+  }
+
+  if (trips >= 10) {
+    unlockAchievement("trip-10", "Kolekcjoner tras", 2500);
+  }
 }

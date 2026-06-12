@@ -24,3 +24,66 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #000000;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(249, 115, 22, 0.08), transparent 180px),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.62), #000000 360px),
+    #000000;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+::selection {
+  background: #f97316;
+  color: #000000;
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgba(249, 115, 22, 0.25) !important;
+  border-radius: 18px !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(16px);
+}
+
+.maplibregl-ctrl-group button {
+  background-color: transparent !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top-color: rgba(63, 63, 70, 0.9) !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: #3f3f46;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}

@@ -20,15 +20,21 @@ export default function BikeProfilePanel() {
   }, []);
 
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 className="mb-4 text-xl font-bold">Aktywny motocykl</h2>
+    <div className="overflow-hidden rounded-[2rem] border border-orange-500/20 bg-zinc-950 shadow-2xl shadow-black/40">
+      <div className="border-b border-zinc-800 bg-black/35 px-5 py-4">
+        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
+          Status
+        </div>
+        <h2 className="mt-1 text-2xl font-black text-white">Aktywny motocykl</h2>
+      </div>
 
-      {!bike ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-500">
+      <div className="p-5">
+        {!bike ? (
+        <div className="rounded-[1.75rem] border border-zinc-800 bg-black/45 p-5 text-zinc-500">
           Dodaj motocykl w garażu, żeby przypisywać do niego przebieg.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-orange-500/40 bg-zinc-950">
+        <div className="overflow-hidden rounded-[1.75rem] border border-orange-500/40 bg-black shadow-xl shadow-orange-500/10">
           {bike.imageUrl && (
             <img src={bike.imageUrl} alt="" className="h-48 w-full object-cover" />
           )}
@@ -51,6 +57,7 @@ export default function BikeProfilePanel() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -63,8 +70,8 @@ function BikeMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-xl bg-zinc-900 p-3">
-      <div className="text-[10px] font-bold uppercase text-zinc-500">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-3">
+      <div className="text-[10px] font-black uppercase text-zinc-500">
         {label}
       </div>
       <div className="mt-1 font-black text-orange-500">{value}</div>

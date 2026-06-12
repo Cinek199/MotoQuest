@@ -71,8 +71,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         .upload(fileName, file);
 
       if (error) {
-        console.error(error);
-        setStatus("Nie udało się wysłać avatara. Sprawdź bucket avatars.");
+        setStatus("Nie udalo sie wyslac avatara. Sprawdz bucket avatars.");
         return;
       }
 
@@ -90,10 +89,17 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   };
 
   return (
-    <section className="rounded-3xl border border-orange-500/25 bg-zinc-950 p-5">
-      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 text-center">
-          <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-orange-500 bg-zinc-800">
+    <section className="overflow-hidden rounded-[1.7rem] border border-orange-500/25 bg-zinc-950 shadow-2xl shadow-black/40">
+      <div className="border-b border-zinc-800 bg-black/45 px-4 py-4 sm:px-5">
+        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
+          Gracz
+        </div>
+        <h2 className="mt-1 text-2xl font-black text-white">Profil kierowcy</h2>
+      </div>
+
+      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[260px_1fr]">
+        <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-5 text-center">
+          <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-orange-500 bg-zinc-800 shadow-2xl shadow-orange-500/15">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
@@ -110,10 +116,12 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
           <div className="mt-4 text-2xl font-black text-white">
             {profile.nickname}
           </div>
-          <div className="mt-1 text-sm text-zinc-400">LVL {stats.level}</div>
+          <div className="mt-1 text-sm font-bold text-zinc-400">
+            LVL {stats.level}
+          </div>
 
-          <label className="mt-4 block cursor-pointer rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-bold text-zinc-200 hover:border-orange-500">
-            {uploadingAvatar ? "Wysyłanie..." : "Zmień avatar"}
+          <label className="mt-4 block cursor-pointer rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-300 transition hover:border-orange-500 hover:bg-orange-500 hover:text-black">
+            {uploadingAvatar ? "Wysylanie..." : "Zmien avatar"}
             <input
               type="file"
               accept="image/*"
@@ -131,36 +139,40 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-            <label className="text-xs font-bold uppercase text-zinc-500">
+          <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-4">
+            <label className="text-xs font-black uppercase tracking-widest text-zinc-500">
               Nick
             </label>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                className="min-w-0 flex-1 rounded-xl bg-zinc-800 px-4 py-3"
+                className="min-w-0 flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-bold outline-none transition focus:border-orange-500"
               />
               <button
                 type="button"
                 onClick={saveNickname}
-                className="rounded-xl bg-orange-500 px-5 py-3 font-bold text-black hover:bg-orange-600"
+                className="rounded-2xl bg-orange-500 px-5 py-3 font-black text-black transition hover:bg-orange-400"
               >
                 Zapisz
               </button>
             </div>
-            {status && <div className="mt-2 text-sm text-orange-400">{status}</div>}
+            {status && (
+              <div className="mt-2 text-sm font-bold text-orange-400">
+                {status}
+              </div>
+            )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <ProfileMetric label="XP" value={String(stats.xp)} />
             <ProfileMetric label="Kafelki" value={String(stats.tiles)} />
-            <ProfileMetric label="Miejscowości" value={String(stats.towns)} />
+            <ProfileMetric label="Miasta" value={String(stats.towns)} />
             <ProfileMetric label="Przebieg" value={`${distanceKm.toFixed(1)} km`} />
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-            <div className="text-xs font-bold uppercase text-zinc-500">
+          <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-4">
+            <div className="text-xs font-black uppercase tracking-widest text-zinc-500">
               Aktywny motocykl
             </div>
             <div className="mt-2 text-xl font-black text-white">
@@ -180,16 +192,10 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   );
 }
 
-function ProfileMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function ProfileMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-      <div className="text-[10px] font-bold uppercase text-zinc-500">
+    <div className="rounded-2xl border border-zinc-800 bg-black/45 p-4">
+      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
         {label}
       </div>
       <div className="mt-1 text-2xl font-black text-orange-500">{value}</div>

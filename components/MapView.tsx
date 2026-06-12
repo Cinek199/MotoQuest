@@ -5,10 +5,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import MapHud from "./MapHud";
-import {
-  createTilePolygon,
-  getTileAreaKm2,
-} from "../lib/tiles";
+import { createTilePolygon, getTileAreaKm2 } from "../lib/tiles";
 import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
@@ -67,9 +64,9 @@ export default function MapView() {
     }
 
     const nextMap = new maplibregl.Map({
+      center: [21.0122, 52.2297],
       container: mapContainer.current,
       style: MAP_STYLE,
-      center: [21.0122, 52.2297],
       zoom: 13,
     });
 
@@ -85,8 +82,11 @@ export default function MapView() {
   }, []);
 
   return (
-    <div className="relative min-h-[640px] overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-950 shadow-2xl">
-      <div ref={mapContainer} className="h-[calc(100vh-8rem)] min-h-[640px] w-full" />
+    <div className="relative min-h-[calc(100dvh-7rem)] overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/80 lg:min-h-[760px] lg:rounded-[2.4rem]">
+      <div
+        ref={mapContainer}
+        className="h-[calc(100dvh-7rem)] min-h-[650px] w-full lg:h-[760px]"
+      />
 
       <MapHud
         currentTown={currentTown}
@@ -97,16 +97,16 @@ export default function MapView() {
       />
 
       {newVoivodeshipPopup && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
-          <div className="rounded-3xl border border-orange-500 bg-zinc-900 p-8 text-center">
-            <div className="text-6xl">✓</div>
-            <div className="mt-3 text-zinc-400">
-              Odkryto nowe województwo
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-sm rounded-3xl border border-orange-500 bg-zinc-950 p-8 text-center shadow-2xl shadow-orange-500/20">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-orange-500 text-2xl font-black text-black">
+              OK
             </div>
-            <div className="mt-2 text-3xl font-bold text-orange-500">
+            <div className="mt-4 text-zinc-400">Odkryto nowe wojewodztwo</div>
+            <div className="mt-2 text-3xl font-black text-orange-500">
               {newVoivodeshipPopup}
             </div>
-            <div className="mt-4 text-xl font-bold text-green-400">+500 XP</div>
+            <div className="mt-4 text-xl font-black text-green-400">+500 XP</div>
           </div>
         </div>
       )}
