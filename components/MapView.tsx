@@ -234,273 +234,229 @@ const [distanceKm, setDistanceKm] =
   )
 );
 
-    const watchId =
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const lat =
-            position.coords.latitude;
-          const lon =
-            position.coords.longitude;
+ const watchId =
+  navigator.geolocation.watchPosition(
+    (position) => {
+
+      const lat =
+        position.coords.latitude;
+
+      const lon =
+        position.coords.longitude;
+
+      if (
+        lastPositionRef.current
+      ) {
+        const km =
+          calculateDistance(
+            lastPositionRef.current.lat,
+            lastPositionRef.current.lon,
+            lat,
+            lon
+          );
+
+        if (km < 2) {
+          const currentDistance =
+            Number(
+              localStorage.getItem(
+                "mq_distance"
+              ) || "0"
+            );
+
+          const newDistance =
+            currentDistance + km;
+
+          localStorage.setItem(
+            "mq_distance",
+            newDistance.toString()
+          );
+
+          const achievements =
+            JSON.parse(
+              localStorage.getItem(
+                "mq_achievements"
+              ) || "[]"
+            );
+
+          const addAchievement = (
+            id: string,
+            title: string,
+            xp: number
+          ) => {
             if (
-  lastPositionRef.current
-) {
-  const km =
-    calculateDistance(
-      lastPositionRef.current.lat,
-      lastPositionRef.current.lon,
-      lat,
-      lon
-    );
-
-  if (km < 2) {
-    const currentDistance =
-      Number(
-        localStorage.getItem(
-          "mq_distance"
-        ) || "0"
-      );
-
-    const newDistance =
-      currentDistance + km;
-
-    localStorage.setItem(
-      "mq_distance",
-      newDistance.toString()
-    );
-
-    const achievements = JSON.parse(
-  localStorage.getItem(
-    "mq_achievements"
-  ) || "[]"
-);
-
-const addAchievement = (
-  id: string,
-  title: string,
-  xp: number
-) => {
-  if (
-    achievements.some(
-      (a:any) => a.id === id
-    )
-  ) {
-    return;
-  }
-
-  achievements.push({
-    id,
-    title,
-    xp,
-  });
-
-  localStorage.setItem(
-    "mq_achievements",
-    JSON.stringify(
-      achievements
-    )
-  );
-};
-
-if (newDistance >= 1) {
-  addAchievement(
-    "distance-1",
-    "Pierwszy kilometr",
-    100
-  );
-}
-
-if (newDistance >= 100) {
-  addAchievement(
-    "distance-100",
-    "100 km",
-    500
-  );
-}
-
-if (newDistance >= 1000) {
-  addAchievement(
-    "distance-1000",
-    "1000 km",
-    2500
-  );
-}
-
-if (newDistance >= 10000) {
-  addAchievement(
-    "distance-10000",
-    "10000 km",
-    10000
-  );
-}
-
-    setDistanceKm(
-      Number(
-        newDistance.toFixed(2)
-      )
-    );
-  }
-}
-
-lastPositionRef.current = {
-  lat,
-  lon,
-};
-
-          map.flyTo({
-            center: [lon, lat],
-            zoom: 15,
-            duration: 500,
-          });
-
-          if (!markerRef.current) {
-            markerRef.current =
-              new maplibregl.Marker({
-                color: "#ff6b00",
-              })
-                .setLngLat([
-                  lon,
-                  lat,
-                ])
-                .addTo(map);
-          } else {
-            markerRef.current.setLngLat([
-              lon,
-              lat,
-            ]);
-          }
-
-          (async () => {
-            const town = await getTownName(
-              lat,
-              lon
-            );
-
-            setCurrentTown(town);
-            const voivodeship =
-  await getVoivodeship(
-    lat,
-    lon
-  );
-
-setCurrentVoivodeship(
-  voivodeship
-);
-
-const discoveredVoivodeships =
-  JSON.parse(
-    localStorage.getItem(
-      "mq_voivodeships"
-    ) || "[]"
-  );
-
-if (
-  !discoveredVoivodeships.includes(
-    voivodeship
-  )
-) {
-  discoveredVoivodeships.push(
-    voivodeship
-  );
-setNewVoivodeshipPopup(
-  voivodeship
-);
-
-setTimeout(() => {
-  setNewVoivodeshipPopup(
-    null
-  );
-}, 4000);
-
-  localStorage.setItem(
-    "mq_voivodeships",
-    JSON.stringify(
-      discoveredVoivodeships
-    )
-  );
-window.dispatchEvent(
-  new Event(
-    "mq-voivodeships-updated"
-  )
-);
-  const achievements =
-    JSON.parse(
-      localStorage.getItem(
-        "mq_achievements"
-      ) || "[]"
-    );
-
-  if (
-    discoveredVoivodeships.length === 1 &&
-    !achievements.some(
-      (a:any) =>
-        a.id === "first-voivodeship"
-    )
-  ) {
-    achievements.push({
-      id: "first-voivodeship",
-      title:
-        "Pierwsze województwo",
-      xp: 500,
-    });
-
-    localStorage.setItem(
-      "mq_achievements",
-      JSON.stringify(
-        achievements
-      )
-    );
-  }
-}
-
-            const towns = JSON.parse(
-              localStorage.getItem("mq_towns") || "[]"
-            );
-
-            if (!towns.includes(town)) {
-              towns.push(town);
-
-              localStorage.setItem(
-                "mq_towns",
-                JSON.stringify(towns)
-              );
-
-              const achievements = JSON.parse(
-                localStorage.getItem("mq_achievements") || "[]"
-              );
-
-              if (
-                towns.length === 1 &&
-                !achievements.some((a:any)=>a.id==="first-town")
-              ) {
-                achievements.push({
-                  id:"first-town",
-                  title:"Pierwsza miejscowość",
-                  xp:100
-                });
-
-                localStorage.setItem(
-                  "mq_achievements",
-                  JSON.stringify(achievements)
-                );
-              }
+              achievements.some(
+                (a:any) => a.id === id
+              )
+            ) {
+              return;
             }
 
-            discoverTile(
-              lat,
-              lon,
-              map,
-              discoveredTiles
-            );
-          })();
-        },
-        console.error,
-        {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-        }
-      );
+            achievements.push({
+              id,
+              title,
+              xp,
+            });
 
-    
+            localStorage.setItem(
+              "mq_achievements",
+              JSON.stringify(
+                achievements
+              )
+            );
+          };
+
+          if (newDistance >= 1) {
+            addAchievement(
+              "distance-1",
+              "Pierwszy kilometr",
+              100
+            );
+          }
+
+          if (newDistance >= 100) {
+            addAchievement(
+              "distance-100",
+              "100 km",
+              500
+            );
+          }
+
+          if (newDistance >= 1000) {
+            addAchievement(
+              "distance-1000",
+              "1000 km",
+              2500
+            );
+          }
+
+          if (newDistance >= 10000) {
+            addAchievement(
+              "distance-10000",
+              "10000 km",
+              10000
+            );
+          }
+
+          setDistanceKm(
+            Number(
+              newDistance.toFixed(2)
+            )
+          );
+        }
+      }
+
+      lastPositionRef.current = {
+        lat,
+        lon,
+      };
+
+      map.flyTo({
+        center: [lon, lat],
+        zoom: 15,
+        duration: 500,
+      });
+
+      if (!markerRef.current) {
+        markerRef.current =
+          new maplibregl.Marker({
+            color: "#ff6b00",
+          })
+            .setLngLat([
+              lon,
+              lat,
+            ])
+            .addTo(map);
+      } else {
+        markerRef.current.setLngLat([
+          lon,
+          lat,
+        ]);
+      }
+
+      (async () => {
+        const town =
+          await getTownName(
+            lat,
+            lon
+          );
+
+        setCurrentTown(town);
+
+        const voivodeship =
+          await getVoivodeship(
+            lat,
+            lon
+          );
+
+        setCurrentVoivodeship(
+          voivodeship
+        );
+
+        const discoveredVoivodeships =
+          JSON.parse(
+            localStorage.getItem(
+              "mq_voivodeships"
+            ) || "[]"
+          );
+
+        if (
+          !discoveredVoivodeships.includes(
+            voivodeship
+          )
+        ) {
+          discoveredVoivodeships.push(
+            voivodeship
+          );
+
+          setNewVoivodeshipPopup(
+            voivodeship
+          );
+
+          setTimeout(() => {
+            setNewVoivodeshipPopup(
+              null
+            );
+          }, 4000);
+
+          localStorage.setItem(
+            "mq_voivodeships",
+            JSON.stringify(
+              discoveredVoivodeships
+            )
+          );
+
+          window.dispatchEvent(
+            new Event(
+              "mq-voivodeships-updated"
+            )
+          );
+        }
+
+        discoverTile(
+          lat,
+          lon,
+          map,
+          discoveredTiles
+        );
+
+      })();
+    },
+    console.error,
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+    }
+  );
+
+return () => {
+  navigator.geolocation.clearWatch(
+    watchId
+  );
+  map.remove();
+};
+
+}, []);
+
 return (
 <div className="space-y-5">
 
