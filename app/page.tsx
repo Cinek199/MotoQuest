@@ -23,19 +23,11 @@ export default function Home() {
 
   useEffect(() => {
     async function init() {
-
-      setLoadingStatus(
-        "🔐 Logowanie..."
-      );
-
+      setLoadingStatus("🔐 Logowanie...");
       setProgress(25);
 
-      await new Promise(
-        resolve =>
-          setTimeout(
-            resolve,
-            1000
-          )
+      await new Promise(resolve =>
+        setTimeout(resolve, 800)
       );
 
       const user =
@@ -52,36 +44,16 @@ export default function Home() {
 
       setProgress(50);
 
-      await loadPlayer(
-        user.id
-      );
+      await loadPlayer(user.id);
 
       setLoadingStatus(
         "🗺️ Ładowanie MotoQuest..."
       );
 
-      setProgress(75);
-
-      await new Promise(
-        resolve =>
-          setTimeout(
-            resolve,
-            500
-          )
-      );
-
-      setLoadingStatus(
-        "✅ Gotowe"
-      );
-
       setProgress(100);
 
-      await new Promise(
-        resolve =>
-          setTimeout(
-            resolve,
-            500
-          )
+      await new Promise(resolve =>
+        setTimeout(resolve, 500)
       );
 
       setShowSplash(false);
@@ -100,125 +72,45 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-black text-white overflow-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-zinc-950 via-black to-black" />
+
+      <div className="fixed top-0 left-0 right-0 z-50 p-4">
 
         <div className="
-          mb-6
+          backdrop-blur-xl
+          bg-black/50
+          border border-orange-500/20
           rounded-3xl
-          border
-          border-orange-500/30
-          bg-gradient-to-r
-          from-zinc-900
-          to-black
-          p-6
+          p-4
+          flex
+          items-center
+          justify-between
         ">
 
-          <div className="flex items-center justify-between">
-
-            <div>
-
-              <div className="
-                text-orange-500
-                uppercase
-                tracking-[0.3em]
-                text-xs
-              ">
-                MotoQuest
-              </div>
-
-              <h1 className="
-                text-4xl
-                md:text-6xl
-                font-black
-                mt-2
-              ">
-                Odkrywaj
-                <span className="text-orange-500">
-                  {" "}Polskę
-                </span>
-              </h1>
-
-              <p className="
-                text-zinc-400
-                mt-2
-              ">
-                Adventure • Exploration • Motorcycle
-              </p>
-
-            </div>
+          <div>
 
             <div className="
-              bg-zinc-900/80
-              border
-              border-zinc-800
-              rounded-3xl
-              px-6
-              py-4
-              text-center
-            ">
-
-              <div className="
-                text-zinc-500
-                text-xs
-              ">
-                POZIOM
-              </div>
-
-              <div className="
-                text-5xl
-                font-black
-                text-orange-500
-              ">
-                {stats.level}
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        <div className="
-          grid
-          grid-cols-3
-          gap-3
-          mb-5
-        ">
-
-          <div className="
-            bg-zinc-900
-            border
-            border-zinc-800
-            rounded-2xl
-            p-4
-          ">
-
-            <div className="
-              text-zinc-500
+              text-orange-500
               text-xs
+              tracking-[0.35em]
+              uppercase
             ">
-              KAFELKI
+              MotoQuest
             </div>
 
             <div className="
               text-2xl
-              font-bold
-              text-orange-500
+              font-black
+              text-white
             ">
-              {stats.tiles}
+              LVL {stats.level}
             </div>
 
           </div>
 
-          <div className="
-            bg-zinc-900
-            border
-            border-zinc-800
-            rounded-2xl
-            p-4
-          ">
+          <div className="text-right">
 
             <div className="
               text-zinc-500
@@ -237,34 +129,62 @@ export default function Home() {
 
           </div>
 
-          <div className="
-            bg-zinc-900
-            border
-            border-zinc-800
-            rounded-2xl
-            p-4
-          ">
-
-            <div className="
-              text-zinc-500
-              text-xs
-            ">
-              MIASTA
-            </div>
-
-            <div className="
-              text-2xl
-              font-bold
-              text-orange-500
-            ">
-              {stats.towns}
-            </div>
-
-          </div>
-
         </div>
 
+      </div>
+
+      <div className="pt-24 pb-28 px-4">
         <MapView />
+      </div>
+
+      <div className="
+        fixed
+        bottom-4
+        left-4
+        right-4
+        z-50
+      ">
+
+        <div className="
+          backdrop-blur-xl
+          bg-black/60
+          border border-zinc-800
+          rounded-3xl
+          p-4
+          grid
+          grid-cols-4
+          text-center
+        ">
+
+          <button className="text-orange-500">
+            🗺️
+            <div className="text-xs mt-1">
+              Mapa
+            </div>
+          </button>
+
+          <button className="text-zinc-400">
+            🏆
+            <div className="text-xs mt-1">
+              XP
+            </div>
+          </button>
+
+          <button className="text-zinc-400">
+            🏍️
+            <div className="text-xs mt-1">
+              Garaż
+            </div>
+          </button>
+
+          <button className="text-zinc-400">
+            👤
+            <div className="text-xs mt-1">
+              Profil
+            </div>
+          </button>
+
+        </div>
 
       </div>
 
