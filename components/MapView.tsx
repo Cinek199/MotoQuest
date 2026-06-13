@@ -24,6 +24,11 @@ type FogRevealTile = {
   points: ScreenPoint[];
 };
 
+type FogBoundaryEdge = {
+  from: ScreenPoint;
+  to: ScreenPoint;
+};
+
 export default function MapView({
   hasUnreadNotifications,
   onOpenNotifications,
@@ -35,6 +40,7 @@ export default function MapView({
   const discoveredTileIdsRef = useRef(new Set<string>());
   const suppressMapInteractionRef = useRef(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+  const [fogBoundaryEdges, setFogBoundaryEdges] = useState<FogBoundaryEdge[]>([]);
   const [fogRevealTiles, setFogRevealTiles] = useState<FogRevealTile[]>([]);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -42,7 +48,12 @@ export default function MapView({
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
     discoveredTileIdsRef.current.add(tileId);
-    updateFogRevealTiles(map, discoveredTileIdsRef.current, setFogRevealTiles);
+    updateFogOverlay(
+      map,
+      discoveredTileIdsRef.current,
+      setFogRevealTiles,
+      setFogBoundaryEdges
+    );
 
     if (map.getSource(sourceId)) {
       return;
@@ -99,7 +110,12 @@ export default function MapView({
     });
 
     nextMap.on("load", () => {
-      updateFogRevealTiles(nextMap, discoveredTileIdsRef.current, setFogRevealTiles);
+      updateFogOverlay(
+        nextMap,
+        discoveredTileIdsRef.current,
+        setFogRevealTiles,
+        setFogBoundaryEdges
+      );
       setMap(nextMap);
     });
 
@@ -138,7 +154,12 @@ export default function MapView({
       setIsFollowingUser(false);
     };
     const syncFog = () => {
-      updateFogRevealTiles(map, discoveredTileIdsRef.current, setFogRevealTiles);
+      updateFogOverlay(
+        map,
+        discoveredTileIdsRef.current,
+        setFogRevealTiles,
+        setFogBoundaryEdges
+      );
     };
 
     map.on("dragstart", disableFollowMode);
@@ -213,7 +234,7 @@ export default function MapView({
         className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
       />
 
-      <MapFogOverlay revealTiles={fogRevealTiles} />
+      <MapFogOverlay boundaryEdges={fogBoundaryEdges} revealTiles={fogRevealTiles} />
 
       <MapHud
         activeTrip={activeTrip}
@@ -253,77 +274,161 @@ export default function MapView({
   );
 }
 
-function updateFogRevealTiles(
+function updateFogOverlay(
   map: maplibregl.Map,
   discoveredTileIds: Set<string>,
-  setFogRevealTiles: (tiles: FogRevealTile[]) => void
+  setFogRevealTiles: (tiles: FogRevealTile[]) => void,
+  setFogBoundaryEdges: (edges: FogBoundaryEdge[]) => void
 ) {
   const bounds = map.getBounds();
   const width = map.getContainer().clientWidth;
   const height = map.getContainer().clientHeight;
+  const revealTileMap = new Map<
+    string,
+    {
+      clear: number;
+      tileX: number;
+      tileY: number;
+    }
+  >();
   const revealTiles: FogRevealTile[] = [];
+  const boundaryEdges: FogBoundaryEdge[] = [];
+  const discoveredCoords = [...discoveredTileIds].map((tileId) =>
+    tileId.split("_").map(Number)
+  );
 
-  [...discoveredTileIds]
-    .map((tileId) => tileId.split("_").map(Number))
-    .forEach(([tileX, tileY]) => {
-      for (let xOffset = -2; xOffset <= 2; xOffset += 1) {
-        for (let yOffset = -2; yOffset <= 2; yOffset += 1) {
-          const distance = Math.max(Math.abs(xOffset), Math.abs(yOffset));
-          const clearByDistance = [1, 0.42, 0.16];
-          const clear = clearByDistance[distance] ?? 0;
+  discoveredCoords.forEach(([tileX, tileY]) => {
+    for (let xOffset = -2; xOffset <= 2; xOffset += 1) {
+      for (let yOffset = -2; yOffset <= 2; yOffset += 1) {
+        const distance = Math.max(Math.abs(xOffset), Math.abs(yOffset));
+        const clearByDistance = [1, 0.36, 0.12];
+        const clear = clearByDistance[distance] ?? 0;
 
-          if (clear <= 0) {
-            continue;
-          }
+        if (clear <= 0) {
+          continue;
+        }
 
-          const nextTileX = tileX + xOffset;
-          const nextTileY = tileY + yOffset;
-          const tileWest = nextTileX * TILE_SIZE;
-          const tileEast = tileWest + TILE_SIZE;
-          const tileSouth = nextTileY * TILE_SIZE;
-          const tileNorth = tileSouth + TILE_SIZE;
+        const nextTileX = tileX + xOffset;
+        const nextTileY = tileY + yOffset;
+        const key = `${nextTileX}_${nextTileY}`;
+        const current = revealTileMap.get(key);
 
-          if (
-            tileEast < bounds.getWest() - TILE_SIZE ||
-            tileWest > bounds.getEast() + TILE_SIZE ||
-            tileNorth < bounds.getSouth() - TILE_SIZE ||
-            tileSouth > bounds.getNorth() + TILE_SIZE
-          ) {
-            continue;
-          }
-
-          const points = [
-            map.project([tileWest, tileSouth]),
-            map.project([tileEast, tileSouth]),
-            map.project([tileEast, tileNorth]),
-            map.project([tileWest, tileNorth]),
-          ];
-
-          const isVisible = points.some((point) => {
-            return (
-              point.x >= -40 &&
-              point.x <= width + 40 &&
-              point.y >= -40 &&
-              point.y <= height + 40
-            );
-          });
-
-          if (!isVisible) {
-            continue;
-          }
-
-          revealTiles.push({
+        if (!current || clear > current.clear) {
+          revealTileMap.set(key, {
             clear,
-            points,
+            tileX: nextTileX,
+            tileY: nextTileY,
           });
         }
       }
+    }
+  });
+
+  revealTileMap.forEach(({ clear, tileX, tileY }) => {
+    const tileWest = tileX * TILE_SIZE;
+    const tileEast = tileWest + TILE_SIZE;
+    const tileSouth = tileY * TILE_SIZE;
+    const tileNorth = tileSouth + TILE_SIZE;
+
+    if (
+      tileEast < bounds.getWest() - TILE_SIZE ||
+      tileWest > bounds.getEast() + TILE_SIZE ||
+      tileNorth < bounds.getSouth() - TILE_SIZE ||
+      tileSouth > bounds.getNorth() + TILE_SIZE
+    ) {
+      return;
+    }
+
+    const points = [
+      map.project([tileWest, tileSouth]),
+      map.project([tileEast, tileSouth]),
+      map.project([tileEast, tileNorth]),
+      map.project([tileWest, tileNorth]),
+    ];
+
+    const isVisible = points.some((point) => {
+      return (
+        point.x >= -40 &&
+        point.x <= width + 40 &&
+        point.y >= -40 &&
+        point.y <= height + 40
+      );
     });
 
+    if (!isVisible) {
+      return;
+    }
+
+    revealTiles.push({
+      clear,
+      points,
+    });
+  });
+
+  discoveredCoords.forEach(([tileX, tileY]) => {
+    const tileWest = tileX * TILE_SIZE;
+    const tileEast = tileWest + TILE_SIZE;
+    const tileSouth = tileY * TILE_SIZE;
+    const tileNorth = tileSouth + TILE_SIZE;
+
+    if (
+      tileEast < bounds.getWest() - TILE_SIZE ||
+      tileWest > bounds.getEast() + TILE_SIZE ||
+      tileNorth < bounds.getSouth() - TILE_SIZE ||
+      tileSouth > bounds.getNorth() + TILE_SIZE
+    ) {
+      return;
+    }
+
+    const edges = [
+      {
+        from: [tileWest, tileSouth] as [number, number],
+        neighbor: `${tileX}_${tileY - 1}`,
+        to: [tileEast, tileSouth] as [number, number],
+      },
+      {
+        from: [tileEast, tileSouth] as [number, number],
+        neighbor: `${tileX + 1}_${tileY}`,
+        to: [tileEast, tileNorth] as [number, number],
+      },
+      {
+        from: [tileEast, tileNorth] as [number, number],
+        neighbor: `${tileX}_${tileY + 1}`,
+        to: [tileWest, tileNorth] as [number, number],
+      },
+      {
+        from: [tileWest, tileNorth] as [number, number],
+        neighbor: `${tileX - 1}_${tileY}`,
+        to: [tileWest, tileSouth] as [number, number],
+      },
+    ];
+
+    edges.forEach((edge) => {
+      if (discoveredTileIds.has(edge.neighbor)) {
+        return;
+      }
+
+      const from = map.project(edge.from);
+      const to = map.project(edge.to);
+
+      boundaryEdges.push({
+        from,
+        to,
+      });
+    });
+  });
+
   setFogRevealTiles(revealTiles);
+  setFogBoundaryEdges(boundaryEdges);
 }
 
-function MapFogOverlay({ revealTiles }: { revealTiles: FogRevealTile[] }) {
+function MapFogOverlay({
+  boundaryEdges,
+  revealTiles,
+}: {
+  boundaryEdges: FogBoundaryEdge[];
+  revealTiles: FogRevealTile[];
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -374,7 +479,9 @@ function MapFogOverlay({ revealTiles }: { revealTiles: FogRevealTile[] }) {
     context.globalCompositeOperation = "source-over";
     context.fillStyle = "rgba(255, 255, 255, 0.025)";
     context.fillRect(0, 0, width, height);
-  }, [revealTiles]);
+
+    drawDiscoveryBoundary(context, boundaryEdges);
+  }, [boundaryEdges, revealTiles]);
 
   return (
     <canvas
@@ -422,6 +529,36 @@ function drawCloudTexture(
   context.fillStyle = "rgba(0, 0, 0, 0.28)";
   context.fillRect(0, 0, width, height);
 
+  context.restore();
+}
+
+function drawDiscoveryBoundary(
+  context: CanvasRenderingContext2D,
+  boundaryEdges: FogBoundaryEdge[]
+) {
+  if (boundaryEdges.length === 0) {
+    return;
+  }
+
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.shadowBlur = 18;
+  context.shadowColor = "rgba(249, 115, 22, 0.9)";
+  context.strokeStyle = "rgba(249, 115, 22, 0.72)";
+  context.lineWidth = 5;
+  context.beginPath();
+
+  boundaryEdges.forEach((edge) => {
+    context.moveTo(edge.from.x, edge.from.y);
+    context.lineTo(edge.to.x, edge.to.y);
+  });
+
+  context.stroke();
+  context.shadowBlur = 7;
+  context.strokeStyle = "rgba(255, 186, 74, 0.95)";
+  context.lineWidth = 2;
+  context.stroke();
   context.restore();
 }
 
