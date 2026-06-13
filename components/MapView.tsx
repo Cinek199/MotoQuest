@@ -16,7 +16,6 @@ const MAP_STYLE =
 const FOG_SOURCE_ID = "mq-map-fog";
 const FOG_LAYER_ID = "mq-map-fog-fill";
 const FOG_LINE_LAYER_ID = "mq-map-fog-line";
-const MAX_VISIBLE_FOG_TILES = 1600;
 
 export default function MapView({
   hasUnreadNotifications,
@@ -60,8 +59,8 @@ export default function MapView({
       type: "fill",
       source: sourceId,
       paint: {
-        "fill-color": "#ff6b00",
-        "fill-opacity": 0.34,
+        "fill-color": "#ffffff",
+        "fill-opacity": 0,
       },
     });
   }, []);
@@ -269,11 +268,11 @@ function ensureFogLayer(map: maplibregl.Map) {
         ["linear"],
         ["zoom"],
         9,
-        0.72,
+        0.94,
         13,
-        0.58,
+        0.9,
         16,
-        0.46,
+        0.86,
       ],
     },
   });
@@ -289,13 +288,13 @@ function ensureFogLayer(map: maplibregl.Map) {
         ["linear"],
         ["zoom"],
         9,
-        0.03,
+        0.04,
         13,
-        0.08,
+        0.06,
         16,
-        0.14,
+        0.08,
       ],
-      "line-width": 0.7,
+      "line-width": 0.5,
     },
   });
 }
@@ -310,45 +309,44 @@ function updateVisibleFog(map: maplibregl.Map, discoveredTileIds: Set<string>) {
   }
 
   const bounds = map.getBounds();
-  const minTileX = Math.floor(bounds.getWest() / TILE_SIZE) - 1;
-  const maxTileX = Math.floor(bounds.getEast() / TILE_SIZE) + 1;
-  const minTileY = Math.floor(bounds.getSouth() / TILE_SIZE) - 1;
-  const maxTileY = Math.floor(bounds.getNorth() / TILE_SIZE) + 1;
-  const tileCount = (maxTileX - minTileX + 1) * (maxTileY - minTileY + 1);
+  const west = bounds.getWest() - TILE_SIZE * 3;
+  const east = bounds.getEast() + TILE_SIZE * 3;
+  const south = bounds.getSouth() - TILE_SIZE * 3;
+  const north = bounds.getNorth() + TILE_SIZE * 3;
+  const holes = [...discoveredTileIds]
+    .map((tileId) => tileId.split("_").map(Number))
+    .filter(([tileX, tileY]) => {
+      const tileWest = tileX * TILE_SIZE;
+      const tileEast = tileWest + TILE_SIZE;
+      const tileSouth = tileY * TILE_SIZE;
+      const tileNorth = tileSouth + TILE_SIZE;
 
-  if (tileCount > MAX_VISIBLE_FOG_TILES) {
-    source.setData({
-      type: "FeatureCollection",
-      features: [],
-    });
-    return;
-  }
+      return tileEast >= west && tileWest <= east && tileNorth >= south && tileSouth <= north;
+    })
+    .map(([tileX, tileY]) => createTilePolygon(tileX, tileY).reverse());
 
-  const features: GeoJSON.Feature<GeoJSON.Polygon>[] = [];
-
-  for (let tileX = minTileX; tileX <= maxTileX; tileX += 1) {
-    for (let tileY = minTileY; tileY <= maxTileY; tileY += 1) {
-      const tileId = `${tileX}_${tileY}`;
-
-      if (discoveredTileIds.has(tileId)) {
-        continue;
-      }
-
-      features.push({
-        type: "Feature",
-        geometry: {
-          type: "Polygon",
-          coordinates: [createTilePolygon(tileX, tileY)],
-        },
-        properties: {
-          status: "fog",
-        },
-      });
-    }
-  }
+  const fogFeature: GeoJSON.Feature<GeoJSON.Polygon> = {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ],
+        ...holes,
+      ],
+    },
+    properties: {
+      status: "fog",
+    },
+  };
 
   source.setData({
     type: "FeatureCollection",
-    features,
+    features: [fogFeature],
   });
 }
