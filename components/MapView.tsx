@@ -330,7 +330,7 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
 
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.clearRect(0, 0, width, height);
-    context.fillStyle = "rgba(3, 4, 5, 0.96)";
+    context.fillStyle = "rgba(3, 4, 5, 0.9)";
     context.fillRect(0, 0, width, height);
 
     drawCloudTexture(context, width, height);
@@ -338,7 +338,7 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
     context.globalCompositeOperation = "destination-out";
 
     revealPoints.forEach((point) => {
-      const radius = point.r * 1.45;
+      const radius = point.r * 1.85;
       const gradient = context.createRadialGradient(
         point.x,
         point.y,
@@ -349,8 +349,8 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
       );
 
       gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
-      gradient.addColorStop(0.48, "rgba(0, 0, 0, 0.96)");
-      gradient.addColorStop(0.72, "rgba(0, 0, 0, 0.42)");
+      gradient.addColorStop(0.36, "rgba(0, 0, 0, 0.98)");
+      gradient.addColorStop(0.66, "rgba(0, 0, 0, 0.56)");
       gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
 
       context.fillStyle = gradient;
@@ -360,7 +360,7 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
     });
 
     context.globalCompositeOperation = "source-over";
-    context.fillStyle = "rgba(255, 255, 255, 0.035)";
+    context.fillStyle = "rgba(255, 255, 255, 0.025)";
     context.fillRect(0, 0, width, height);
   }, [revealPoints]);
 
@@ -383,32 +383,36 @@ function drawCloudTexture(
   height: number
 ) {
   context.save();
-  context.filter = "blur(26px)";
+  context.globalCompositeOperation = "screen";
 
-  for (let index = 0; index < 42; index += 1) {
+  for (let index = 0; index < 180; index += 1) {
     const x = seededNoise(index, 13.17) * width;
     const y = seededNoise(index, 91.73) * height;
-    const radius = 58 + seededNoise(index, 41.29) * 130;
-    const opacity = 0.08 + seededNoise(index, 7.61) * 0.14;
-    const gradient = context.createRadialGradient(x, y, radius * 0.12, x, y, radius);
+    const radius = 34 + seededNoise(index, 41.29) * 92;
+    const opacity = 0.035 + seededNoise(index, 7.61) * 0.085;
+    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
 
-    gradient.addColorStop(0, `rgba(215, 220, 218, ${opacity})`);
-    gradient.addColorStop(0.45, `rgba(170, 176, 174, ${opacity * 0.72})`);
-    gradient.addColorStop(1, "rgba(80, 88, 88, 0)");
+    gradient.addColorStop(0, `rgba(230, 235, 232, ${opacity})`);
+    gradient.addColorStop(0.38, `rgba(185, 192, 190, ${opacity * 0.55})`);
+    gradient.addColorStop(1, "rgba(90, 98, 98, 0)");
 
     context.fillStyle = gradient;
     context.beginPath();
     context.ellipse(
       x,
       y,
-      radius * (1.1 + seededNoise(index, 5.33) * 0.9),
-      radius * (0.42 + seededNoise(index, 2.77) * 0.5),
+      radius * (1.35 + seededNoise(index, 5.33) * 1.25),
+      radius * (0.22 + seededNoise(index, 2.77) * 0.34),
       seededNoise(index, 19.91) * Math.PI,
       0,
       Math.PI * 2
     );
     context.fill();
   }
+
+  context.globalCompositeOperation = "source-over";
+  context.fillStyle = "rgba(0, 0, 0, 0.28)";
+  context.fillRect(0, 0, width, height);
 
   context.restore();
 }
