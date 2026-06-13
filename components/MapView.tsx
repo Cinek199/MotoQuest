@@ -14,10 +14,14 @@ import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
-type FogRevealPoint = {
-  r: number;
+type ScreenPoint = {
   x: number;
   y: number;
+};
+
+type FogRevealTile = {
+  clear: number;
+  points: ScreenPoint[];
 };
 
 export default function MapView({
@@ -31,14 +35,14 @@ export default function MapView({
   const discoveredTileIdsRef = useRef(new Set<string>());
   const suppressMapInteractionRef = useRef(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
-  const [fogRevealPoints, setFogRevealPoints] = useState<FogRevealPoint[]>([]);
+  const [fogRevealTiles, setFogRevealTiles] = useState<FogRevealTile[]>([]);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
     discoveredTileIdsRef.current.add(tileId);
-    updateFogRevealPoints(map, discoveredTileIdsRef.current, setFogRevealPoints);
+    updateFogRevealTiles(map, discoveredTileIdsRef.current, setFogRevealTiles);
 
     if (map.getSource(sourceId)) {
       return;
@@ -95,7 +99,7 @@ export default function MapView({
     });
 
     nextMap.on("load", () => {
-      updateFogRevealPoints(nextMap, discoveredTileIdsRef.current, setFogRevealPoints);
+      updateFogRevealTiles(nextMap, discoveredTileIdsRef.current, setFogRevealTiles);
       setMap(nextMap);
     });
 
@@ -134,7 +138,7 @@ export default function MapView({
       setIsFollowingUser(false);
     };
     const syncFog = () => {
-      updateFogRevealPoints(map, discoveredTileIdsRef.current, setFogRevealPoints);
+      updateFogRevealTiles(map, discoveredTileIdsRef.current, setFogRevealTiles);
     };
 
     map.on("dragstart", disableFollowMode);
@@ -209,7 +213,7 @@ export default function MapView({
         className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
       />
 
-      <MapFogOverlay revealPoints={fogRevealPoints} />
+      <MapFogOverlay revealTiles={fogRevealTiles} />
 
       <MapHud
         activeTrip={activeTrip}
@@ -249,62 +253,77 @@ export default function MapView({
   );
 }
 
-function updateFogRevealPoints(
+function updateFogRevealTiles(
   map: maplibregl.Map,
   discoveredTileIds: Set<string>,
-  setFogRevealPoints: (points: FogRevealPoint[]) => void
+  setFogRevealTiles: (tiles: FogRevealTile[]) => void
 ) {
   const bounds = map.getBounds();
   const width = map.getContainer().clientWidth;
   const height = map.getContainer().clientHeight;
-  const revealPoints = [...discoveredTileIds]
+  const revealTiles: FogRevealTile[] = [];
+
+  [...discoveredTileIds]
     .map((tileId) => tileId.split("_").map(Number))
-    .filter(([tileX, tileY]) => {
-      const tileWest = tileX * TILE_SIZE;
-      const tileEast = tileWest + TILE_SIZE;
-      const tileSouth = tileY * TILE_SIZE;
-      const tileNorth = tileSouth + TILE_SIZE;
+    .forEach(([tileX, tileY]) => {
+      for (let xOffset = -2; xOffset <= 2; xOffset += 1) {
+        for (let yOffset = -2; yOffset <= 2; yOffset += 1) {
+          const distance = Math.max(Math.abs(xOffset), Math.abs(yOffset));
+          const clearByDistance = [1, 0.42, 0.16];
+          const clear = clearByDistance[distance] ?? 0;
 
-      return (
-        tileEast >= bounds.getWest() - TILE_SIZE * 8 &&
-        tileWest <= bounds.getEast() + TILE_SIZE * 8 &&
-        tileNorth >= bounds.getSouth() - TILE_SIZE * 8 &&
-        tileSouth <= bounds.getNorth() + TILE_SIZE * 8
-      );
-    })
-    .slice(-450)
-    .map(([tileX, tileY]) => {
-      const centerLon = (tileX + 0.5) * TILE_SIZE;
-      const centerLat = (tileY + 0.5) * TILE_SIZE;
-      const center = map.project([centerLon, centerLat]);
-      const left = map.project([tileX * TILE_SIZE, centerLat]);
-      const right = map.project([(tileX + 1) * TILE_SIZE, centerLat]);
-      const top = map.project([centerLon, (tileY + 1) * TILE_SIZE]);
-      const bottom = map.project([centerLon, tileY * TILE_SIZE]);
-      const tilePixelSize = Math.max(
-        Math.abs(right.x - left.x),
-        Math.abs(bottom.y - top.y)
-      );
+          if (clear <= 0) {
+            continue;
+          }
 
-      return {
-        r: clamp(tilePixelSize * 1.75, 42, 190),
-        x: center.x,
-        y: center.y,
-      };
-    })
-    .filter((point) => {
-      return (
-        point.x >= -point.r &&
-        point.x <= width + point.r &&
-        point.y >= -point.r &&
-        point.y <= height + point.r
-      );
+          const nextTileX = tileX + xOffset;
+          const nextTileY = tileY + yOffset;
+          const tileWest = nextTileX * TILE_SIZE;
+          const tileEast = tileWest + TILE_SIZE;
+          const tileSouth = nextTileY * TILE_SIZE;
+          const tileNorth = tileSouth + TILE_SIZE;
+
+          if (
+            tileEast < bounds.getWest() - TILE_SIZE ||
+            tileWest > bounds.getEast() + TILE_SIZE ||
+            tileNorth < bounds.getSouth() - TILE_SIZE ||
+            tileSouth > bounds.getNorth() + TILE_SIZE
+          ) {
+            continue;
+          }
+
+          const points = [
+            map.project([tileWest, tileSouth]),
+            map.project([tileEast, tileSouth]),
+            map.project([tileEast, tileNorth]),
+            map.project([tileWest, tileNorth]),
+          ];
+
+          const isVisible = points.some((point) => {
+            return (
+              point.x >= -40 &&
+              point.x <= width + 40 &&
+              point.y >= -40 &&
+              point.y <= height + 40
+            );
+          });
+
+          if (!isVisible) {
+            continue;
+          }
+
+          revealTiles.push({
+            clear,
+            points,
+          });
+        }
+      }
     });
 
-  setFogRevealPoints(revealPoints);
+  setFogRevealTiles(revealTiles);
 }
 
-function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
+function MapFogOverlay({ revealTiles }: { revealTiles: FogRevealTile[] }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -337,32 +356,25 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
 
     context.globalCompositeOperation = "destination-out";
 
-    revealPoints.forEach((point) => {
-      const radius = point.r * 1.85;
-      const gradient = context.createRadialGradient(
-        point.x,
-        point.y,
-        radius * 0.2,
-        point.x,
-        point.y,
-        radius
-      );
-
-      gradient.addColorStop(0, "rgba(0, 0, 0, 1)");
-      gradient.addColorStop(0.36, "rgba(0, 0, 0, 0.98)");
-      gradient.addColorStop(0.66, "rgba(0, 0, 0, 0.56)");
-      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-
-      context.fillStyle = gradient;
+    revealTiles.forEach((tile) => {
+      context.fillStyle = `rgba(0, 0, 0, ${tile.clear})`;
       context.beginPath();
-      context.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      tile.points.forEach((point, index) => {
+        if (index === 0) {
+          context.moveTo(point.x, point.y);
+          return;
+        }
+
+        context.lineTo(point.x, point.y);
+      });
+      context.closePath();
       context.fill();
     });
 
     context.globalCompositeOperation = "source-over";
     context.fillStyle = "rgba(255, 255, 255, 0.025)";
     context.fillRect(0, 0, width, height);
-  }, [revealPoints]);
+  }, [revealTiles]);
 
   return (
     <canvas
@@ -371,10 +383,6 @@ function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
       className="pointer-events-none absolute inset-0 z-[12] h-full w-full"
     />
   );
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 function drawCloudTexture(
