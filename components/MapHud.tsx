@@ -11,6 +11,8 @@ type MapHudProps = {
   currentVoivodeship: string;
   distanceKm: number;
   hasUnreadNotifications: boolean;
+  isFollowingUser: boolean;
+  onCenterUser?: () => void;
   onOpenNotifications: () => void;
   onStopRecording?: () => void;
   onZoomIn?: () => void;
@@ -24,6 +26,8 @@ export default function MapHud({
   currentVoivodeship,
   distanceKm,
   hasUnreadNotifications,
+  isFollowingUser,
+  onCenterUser,
   onOpenNotifications,
   onStopRecording,
   onZoomIn,
@@ -130,6 +134,12 @@ export default function MapHud({
       <div className="pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
         <HudRoundButton active={gpsReady} label="GPS" sublabel={gpsReady ? "ON" : "..."} />
         <HudRoundButton label="MAP" sublabel="2D" />
+        <HudRoundButton
+          active={isFollowingUser}
+          label="CEL"
+          onClick={onCenterUser}
+          sublabel="GPS"
+        />
         <div className="pointer-events-auto overflow-hidden rounded-full border border-white/10 bg-black/82 shadow-2xl backdrop-blur-xl">
           <HudZoomButton label="+" onClick={onZoomIn} />
           <div className="h-px bg-white/10" />
@@ -177,23 +187,42 @@ export default function MapHud({
 function HudRoundButton({
   active = false,
   label,
+  onClick,
   sublabel,
 }: {
   active?: boolean;
   label: string;
+  onClick?: () => void;
   sublabel?: string;
 }) {
-  return (
-    <div
-      className={[
-        "flex h-12 w-12 flex-col items-center justify-center rounded-full border bg-black/82 text-[10px] font-black shadow-2xl backdrop-blur-xl",
-        active
-          ? "border-green-500/45 text-green-400"
-          : "border-white/10 text-zinc-300",
-      ].join(" ")}
-    >
+  const content = (
+    <>
       <span>{label}</span>
       {sublabel && <span className="text-[8px] text-zinc-500">{sublabel}</span>}
+    </>
+  );
+  const className = [
+    "flex h-12 w-12 flex-col items-center justify-center rounded-full border bg-black/82 text-[10px] font-black shadow-2xl backdrop-blur-xl",
+    active ? "border-green-500/45 text-green-400" : "border-white/10 text-zinc-300",
+    onClick ? "pointer-events-auto transition active:scale-95" : "",
+  ].join(" ");
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        aria-label="Wycentruj mape na aktualnej pozycji"
+        onClick={onClick}
+        className={className}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {content}
     </div>
   );
 }

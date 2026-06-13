@@ -22,7 +22,9 @@ export default function MapView({
   onOpenNotifications: () => void;
 }) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
+  const suppressMapInteractionRef = useRef(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+  const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
@@ -72,12 +74,14 @@ export default function MapView({
   const {
     currentTown,
     currentVoivodeship,
+    currentPosition,
     distanceKm,
     newVoivodeshipPopup,
     tilesCount,
   } = useMotoQuestTracking({
     addTileLayer,
     map,
+    shouldFollowUser: isFollowingUser,
   });
 
   useEffect(() => {
@@ -114,6 +118,50 @@ export default function MapView({
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
+    const disableFollowMode = () => {
+      if (suppressMapInteractionRef.current) {
+        return;
+      }
+
+      setIsFollowingUser(false);
+    };
+
+    map.on("dragstart", disableFollowMode);
+    map.on("zoomstart", disableFollowMode);
+    map.on("rotatestart", disableFollowMode);
+    map.on("pitchstart", disableFollowMode);
+
+    return () => {
+      map.off("dragstart", disableFollowMode);
+      map.off("zoomstart", disableFollowMode);
+      map.off("rotatestart", disableFollowMode);
+      map.off("pitchstart", disableFollowMode);
+    };
+  }, [map]);
+
+  const centerOnUser = () => {
+    if (!map || !currentPosition) {
+      return;
+    }
+
+    suppressMapInteractionRef.current = true;
+    setIsFollowingUser(true);
+    map.flyTo({
+      center: [currentPosition.lon, currentPosition.lat],
+      duration: 500,
+      zoom: Math.max(map.getZoom(), 15),
+    });
+
+    window.setTimeout(() => {
+      suppressMapInteractionRef.current = false;
+    }, 700);
+  };
+
   const stopActiveTrip = async () => {
     const result = finishActiveTrip();
 
@@ -147,6 +195,8 @@ export default function MapView({
         currentVoivodeship={currentVoivodeship}
         distanceKm={distanceKm}
         hasUnreadNotifications={hasUnreadNotifications}
+        isFollowingUser={isFollowingUser}
+        onCenterUser={centerOnUser}
         onOpenNotifications={onOpenNotifications}
         onStopRecording={stopActiveTrip}
         tilesCount={tilesCount}

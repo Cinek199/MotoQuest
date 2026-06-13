@@ -29,26 +29,34 @@ type Position = {
 type UseMotoQuestTrackingParams = {
   addTileLayer: (map: maplibregl.Map, tileId: string) => void;
   map: maplibregl.Map | null;
+  shouldFollowUser: boolean;
 };
 
 export function useMotoQuestTracking({
   addTileLayer,
   map,
+  shouldFollowUser,
 }: UseMotoQuestTrackingParams) {
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const userIdRef = useRef("");
   const lastPositionRef = useRef<Position | null>(null);
+  const shouldFollowUserRef = useRef(shouldFollowUser);
   const discoveredTilesRef = useRef(
     new Set<string>(getJson<string[]>(STORAGE_KEYS.tiles, []))
   );
 
   const [tilesCount, setTilesCount] = useState(0);
+  const [currentPosition, setCurrentPosition] = useState<Position | null>(null);
   const [currentTown, setCurrentTown] = useState("Ładowanie...");
   const [currentVoivodeship, setCurrentVoivodeship] = useState("Nieznane");
   const [newVoivodeshipPopup, setNewVoivodeshipPopup] = useState<string | null>(
     null
   );
   const [distanceKm, setDistanceKm] = useState(0);
+
+  useEffect(() => {
+    shouldFollowUserRef.current = shouldFollowUser;
+  }, [shouldFollowUser]);
 
   useEffect(() => {
     async function initUser() {
@@ -101,6 +109,9 @@ export function useMotoQuestTracking({
   ) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
+    const nextPosition = { lat, lon };
+
+    setCurrentPosition(nextPosition);
 
     appendActiveTripPoint({
       accuracy: position.coords.accuracy ?? null,
@@ -114,15 +125,9 @@ export function useMotoQuestTracking({
       timestamp: position.timestamp || Date.now(),
     });
 
-    updateDistance({
-      lat,
-      lon,
-    });
+    updateDistance(nextPosition);
 
-    updateMapPosition(map, {
-      lat,
-      lon,
-    });
+    updateMapPosition(map, nextPosition);
 
     let progressChanged = false;
 
@@ -187,11 +192,13 @@ export function useMotoQuestTracking({
   }
 
   function updateMapPosition(map: maplibregl.Map, position: Position) {
-    map.flyTo({
-      center: [position.lon, position.lat],
-      zoom: 15,
-      duration: 500,
-    });
+    if (shouldFollowUserRef.current) {
+      map.flyTo({
+        center: [position.lon, position.lat],
+        zoom: 15,
+        duration: 500,
+      });
+    }
 
     if (!markerRef.current) {
       markerRef.current = new maplibregl.Marker({
@@ -230,6 +237,7 @@ export function useMotoQuestTracking({
   }
 
   return {
+    currentPosition,
     currentTown,
     currentVoivodeship,
     distanceKm,
