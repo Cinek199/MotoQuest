@@ -36,6 +36,8 @@ export default function MapView({
 
     const [tileX, tileY] = tileId.split("_").map(Number);
 
+    removeFogTile(map, tileId);
+
     map.addSource(sourceId, {
       type: "geojson",
       data: {
@@ -56,6 +58,10 @@ export default function MapView({
         "fill-color": "#ff6b00",
         "fill-opacity": 0.34,
       },
+    });
+
+    getNeighborTileIds(tileX, tileY).forEach((neighborTileId) => {
+      addFogTile(map, neighborTileId);
     });
   }, []);
 
@@ -227,4 +233,105 @@ export default function MapView({
       )}
     </div>
   );
+}
+
+function getNeighborTileIds(tileX: number, tileY: number) {
+  const neighbors: string[] = [];
+
+  for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
+    for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
+      if (xOffset === 0 && yOffset === 0) {
+        continue;
+      }
+
+      neighbors.push(`${tileX + xOffset}_${tileY + yOffset}`);
+    }
+  }
+
+  return neighbors;
+}
+
+function addFogTile(map: maplibregl.Map, tileId: string) {
+  const discoveredSourceId = `tile-${tileId}`;
+  const sourceId = `fog-tile-${tileId}`;
+  const lineId = `fog-tile-line-${tileId}`;
+
+  if (map.getSource(discoveredSourceId) || map.getSource(sourceId)) {
+    return;
+  }
+
+  const [tileX, tileY] = tileId.split("_").map(Number);
+
+  map.addSource(sourceId, {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [createTilePolygon(tileX, tileY)],
+      },
+      properties: {
+        status: "neighbor-fog",
+      },
+    },
+  });
+
+  map.addLayer({
+    id: sourceId,
+    type: "fill",
+    source: sourceId,
+    paint: {
+      "fill-color": "#f97316",
+      "fill-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        9,
+        0.03,
+        13,
+        0.08,
+        16,
+        0.12,
+      ],
+    },
+  });
+
+  map.addLayer({
+    id: lineId,
+    type: "line",
+    source: sourceId,
+    paint: {
+      "line-color": "#fbbf24",
+      "line-dasharray": [1.5, 2.5],
+      "line-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        9,
+        0.08,
+        13,
+        0.18,
+        16,
+        0.26,
+      ],
+      "line-width": 1,
+    },
+  });
+}
+
+function removeFogTile(map: maplibregl.Map, tileId: string) {
+  const sourceId = `fog-tile-${tileId}`;
+  const lineId = `fog-tile-line-${tileId}`;
+
+  if (map.getLayer(lineId)) {
+    map.removeLayer(lineId);
+  }
+
+  if (map.getLayer(sourceId)) {
+    map.removeLayer(sourceId);
+  }
+
+  if (map.getSource(sourceId)) {
+    map.removeSource(sourceId);
+  }
 }

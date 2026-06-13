@@ -268,10 +268,10 @@ function createUserPositionMarker() {
   const marker = document.createElement("div");
   marker.setAttribute("aria-label", "Aktualna pozycja");
   Object.assign(marker.style, {
-    height: "46px",
+    height: "40px",
     pointerEvents: "none",
     position: "relative",
-    width: "46px",
+    width: "40px",
   });
 
   const trail = document.createElement("div");
@@ -287,30 +287,17 @@ function createUserPositionMarker() {
     width: "22px",
   });
 
-  const halo = document.createElement("div");
-  Object.assign(halo.style, {
-    background: "rgba(0, 0, 0, 0.78)",
-    border: "1px solid rgba(249, 115, 22, 0.75)",
-    borderRadius: "999px",
-    boxShadow: "0 0 0 5px rgba(249, 115, 22, 0.12), 0 0 26px rgba(249, 115, 22, 0.55)",
-    height: "34px",
-    left: "6px",
-    position: "absolute",
-    top: "5px",
-    width: "34px",
-  });
-
   const arrow = document.createElement("div");
   Object.assign(arrow.style, {
     background: "linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%)",
     clipPath: "polygon(50% 0%, 96% 100%, 50% 78%, 4% 100%)",
-    filter: "drop-shadow(0 0 10px rgba(249, 115, 22, 0.95))",
-    height: "25px",
-    left: "14px",
+    filter: "drop-shadow(0 0 8px rgba(249, 115, 22, 0.95)) drop-shadow(0 2px 7px rgba(0, 0, 0, 0.9))",
+    height: "30px",
+    left: "11px",
     position: "absolute",
-    top: "9px",
+    top: "4px",
     transform: "rotate(45deg)",
-    width: "18px",
+    width: "21px",
   });
 
   const core = document.createElement("div");
@@ -318,14 +305,14 @@ function createUserPositionMarker() {
     background: "#0b0b0d",
     border: "1px solid rgba(255, 255, 255, 0.82)",
     borderRadius: "999px",
-    height: "7px",
-    left: "19.5px",
+    height: "6px",
+    left: "18px",
     position: "absolute",
-    top: "18.5px",
-    width: "7px",
+    top: "16px",
+    width: "6px",
   });
 
-  marker.append(trail, halo, arrow, core);
+  marker.append(trail, arrow, core);
 
   return marker;
 }
