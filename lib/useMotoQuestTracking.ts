@@ -202,7 +202,7 @@ export function useMotoQuestTracking({
 
     if (!markerRef.current) {
       markerRef.current = new maplibregl.Marker({
-        color: "#ff6b00",
+        element: createUserPositionMarker(),
       })
         .setLngLat([position.lon, position.lat])
         .addTo(map);
@@ -262,4 +262,70 @@ function unlockDistanceAchievements(distanceKm: number) {
   if (distanceKm >= 10000) {
     unlockAchievement("distance-10000", "10000 km", 10000);
   }
+}
+
+function createUserPositionMarker() {
+  const marker = document.createElement("div");
+  marker.setAttribute("aria-label", "Aktualna pozycja");
+  Object.assign(marker.style, {
+    height: "46px",
+    pointerEvents: "none",
+    position: "relative",
+    width: "46px",
+  });
+
+  const trail = document.createElement("div");
+  Object.assign(trail.style, {
+    background: "rgba(249, 115, 22, 0.5)",
+    borderRadius: "999px",
+    bottom: "6px",
+    boxShadow: "0 0 18px rgba(249, 115, 22, 0.75)",
+    height: "10px",
+    left: "17px",
+    position: "absolute",
+    transform: "rotate(45deg)",
+    width: "22px",
+  });
+
+  const halo = document.createElement("div");
+  Object.assign(halo.style, {
+    background: "rgba(0, 0, 0, 0.78)",
+    border: "1px solid rgba(249, 115, 22, 0.75)",
+    borderRadius: "999px",
+    boxShadow: "0 0 0 5px rgba(249, 115, 22, 0.12), 0 0 26px rgba(249, 115, 22, 0.55)",
+    height: "34px",
+    left: "6px",
+    position: "absolute",
+    top: "5px",
+    width: "34px",
+  });
+
+  const arrow = document.createElement("div");
+  Object.assign(arrow.style, {
+    background: "linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%)",
+    clipPath: "polygon(50% 0%, 96% 100%, 50% 78%, 4% 100%)",
+    filter: "drop-shadow(0 0 10px rgba(249, 115, 22, 0.95))",
+    height: "25px",
+    left: "14px",
+    position: "absolute",
+    top: "9px",
+    transform: "rotate(45deg)",
+    width: "18px",
+  });
+
+  const core = document.createElement("div");
+  Object.assign(core.style, {
+    background: "#0b0b0d",
+    border: "1px solid rgba(255, 255, 255, 0.82)",
+    borderRadius: "999px",
+    height: "7px",
+    left: "19.5px",
+    position: "absolute",
+    top: "18.5px",
+    width: "7px",
+  });
+
+  marker.append(trail, halo, arrow, core);
+
+  return marker;
 }

@@ -29,7 +29,6 @@ export default function MapView({
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
-    const lineId = `tile-line-${tileId}`;
 
     if (map.getSource(sourceId)) {
       return;
@@ -55,18 +54,7 @@ export default function MapView({
       source: sourceId,
       paint: {
         "fill-color": "#ff6b00",
-        "fill-opacity": 0.28,
-      },
-    });
-
-    map.addLayer({
-      id: lineId,
-      type: "line",
-      source: sourceId,
-      paint: {
-        "line-color": "#ff8a1f",
-        "line-opacity": 0.8,
-        "line-width": 1.5,
+        "fill-opacity": 0.34,
       },
     });
   }, []);
@@ -123,8 +111,12 @@ export default function MapView({
       return;
     }
 
-    const disableFollowMode = () => {
+    const disableFollowMode = (event: maplibregl.MapLibreEvent) => {
       if (suppressMapInteractionRef.current) {
+        return;
+      }
+
+      if (!event.originalEvent) {
         return;
       }
 
@@ -160,6 +152,16 @@ export default function MapView({
     window.setTimeout(() => {
       suppressMapInteractionRef.current = false;
     }, 700);
+  };
+
+  const zoomIn = () => {
+    setIsFollowingUser(false);
+    map?.zoomIn();
+  };
+
+  const zoomOut = () => {
+    setIsFollowingUser(false);
+    map?.zoomOut();
   };
 
   const stopActiveTrip = async () => {
@@ -200,8 +202,8 @@ export default function MapView({
         onOpenNotifications={onOpenNotifications}
         onStopRecording={stopActiveTrip}
         tilesCount={tilesCount}
-        onZoomIn={() => map?.zoomIn()}
-        onZoomOut={() => map?.zoomOut()}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
       />
 
       {newVoivodeshipPopup && (

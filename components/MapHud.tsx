@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { getProfile, type PlayerProfile } from "../lib/profile";
 import type { ActiveTrip } from "../lib/trips";
@@ -133,13 +133,13 @@ export default function MapHud({
 
       <div className="pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
         <HudRoundButton active={gpsReady} label="GPS" sublabel={gpsReady ? "ON" : "..."} />
-        <HudRoundButton label="MAP" sublabel="2D" />
         <HudRoundButton
+          ariaLabel="Wycentruj mape na aktualnej pozycji"
           active={isFollowingUser}
-          label="CEL"
           onClick={onCenterUser}
-          sublabel="GPS"
-        />
+        >
+          <PositionMarkerIcon />
+        </HudRoundButton>
         <div className="pointer-events-auto overflow-hidden rounded-full border border-white/10 bg-black/82 shadow-2xl backdrop-blur-xl">
           <HudZoomButton label="+" onClick={onZoomIn} />
           <div className="h-px bg-white/10" />
@@ -185,19 +185,23 @@ export default function MapHud({
 }
 
 function HudRoundButton({
+  ariaLabel,
   active = false,
+  children,
   label,
   onClick,
   sublabel,
 }: {
+  ariaLabel?: string;
   active?: boolean;
-  label: string;
+  children?: ReactNode;
+  label?: string;
   onClick?: () => void;
   sublabel?: string;
 }) {
   const content = (
     <>
-      <span>{label}</span>
+      {children ?? <span>{label}</span>}
       {sublabel && <span className="text-[8px] text-zinc-500">{sublabel}</span>}
     </>
   );
@@ -211,7 +215,7 @@ function HudRoundButton({
     return (
       <button
         type="button"
-        aria-label="Wycentruj mape na aktualnej pozycji"
+        aria-label={ariaLabel ?? label}
         onClick={onClick}
         className={className}
       >
@@ -224,6 +228,31 @@ function HudRoundButton({
     <div className={className}>
       {content}
     </div>
+  );
+}
+
+function PositionMarkerIcon() {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      className="h-6 w-6"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        cx="16"
+        cy="16"
+        r="12"
+        fill="rgba(0,0,0,0.45)"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M16 5.5 23.5 25 16 20.6 8.5 25 16 5.5Z"
+        fill="currentColor"
+      />
+      <circle cx="16" cy="16" r="2.6" fill="#0b0b0d" stroke="white" strokeWidth="1" />
+    </svg>
   );
 }
 
