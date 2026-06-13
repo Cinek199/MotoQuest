@@ -13,10 +13,12 @@ import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const FOG_SOURCE_ID = "mq-map-fog";
-const FOG_LAYER_ID = "mq-map-fog-fill";
-const FOG_LINE_LAYER_ID = "mq-map-fog-line";
-const MAX_VISIBLE_FOG_TILES = 2200;
+
+type FogRevealPoint = {
+  r: number;
+  x: number;
+  y: number;
+};
 
 export default function MapView({
   hasUnreadNotifications,
@@ -29,13 +31,14 @@ export default function MapView({
   const discoveredTileIdsRef = useRef(new Set<string>());
   const suppressMapInteractionRef = useRef(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+  const [fogRevealPoints, setFogRevealPoints] = useState<FogRevealPoint[]>([]);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
     discoveredTileIdsRef.current.add(tileId);
-    updateVisibleFog(map, discoveredTileIdsRef.current);
+    updateFogRevealPoints(map, discoveredTileIdsRef.current, setFogRevealPoints);
 
     if (map.getSource(sourceId)) {
       return;
@@ -92,8 +95,7 @@ export default function MapView({
     });
 
     nextMap.on("load", () => {
-      ensureFogLayer(nextMap);
-      updateVisibleFog(nextMap, discoveredTileIdsRef.current);
+      updateFogRevealPoints(nextMap, discoveredTileIdsRef.current, setFogRevealPoints);
       setMap(nextMap);
     });
 
@@ -132,7 +134,7 @@ export default function MapView({
       setIsFollowingUser(false);
     };
     const syncFog = () => {
-      updateVisibleFog(map, discoveredTileIdsRef.current);
+      updateFogRevealPoints(map, discoveredTileIdsRef.current, setFogRevealPoints);
     };
 
     map.on("dragstart", disableFollowMode);
@@ -207,6 +209,8 @@ export default function MapView({
         className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
       />
 
+      <MapFogOverlay revealPoints={fogRevealPoints} />
+
       <MapHud
         activeTrip={activeTrip}
         currentTown={currentTown}
@@ -245,142 +249,118 @@ export default function MapView({
   );
 }
 
-function ensureFogLayer(map: maplibregl.Map) {
-  if (map.getSource(FOG_SOURCE_ID)) {
-    return;
-  }
-
-  map.addSource(FOG_SOURCE_ID, {
-    type: "geojson",
-    data: {
-      type: "FeatureCollection",
-      features: [],
-    },
-  });
-
-  map.addLayer({
-    id: FOG_LAYER_ID,
-    type: "fill",
-    source: FOG_SOURCE_ID,
-    paint: {
-      "fill-color": "#050506",
-      "fill-opacity": ["get", "opacity"],
-    },
-  });
-
-  map.addLayer({
-    id: FOG_LINE_LAYER_ID,
-    type: "line",
-    source: FOG_SOURCE_ID,
-    paint: {
-      "line-color": "#f97316",
-      "line-opacity": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        9,
-        0.04,
-        13,
-        0.06,
-        16,
-        0.08,
-      ],
-      "line-width": 0.5,
-    },
-  });
-}
-
-function updateVisibleFog(map: maplibregl.Map, discoveredTileIds: Set<string>) {
-  ensureFogLayer(map);
-
-  const source = map.getSource(FOG_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-
-  if (!source) {
-    return;
-  }
-
-  const bounds = map.getBounds();
-  const minTileX = Math.floor(bounds.getWest() / TILE_SIZE) - 2;
-  const maxTileX = Math.floor(bounds.getEast() / TILE_SIZE) + 2;
-  const minTileY = Math.floor(bounds.getSouth() / TILE_SIZE) - 2;
-  const maxTileY = Math.floor(bounds.getNorth() / TILE_SIZE) + 2;
-  const tileCount = (maxTileX - minTileX + 1) * (maxTileY - minTileY + 1);
-
-  if (tileCount > MAX_VISIBLE_FOG_TILES) {
-    source.setData({
-      type: "FeatureCollection",
-      features: [
-        createFogFeature(
-          [
-            [bounds.getWest() - TILE_SIZE * 4, bounds.getSouth() - TILE_SIZE * 4],
-            [bounds.getEast() + TILE_SIZE * 4, bounds.getSouth() - TILE_SIZE * 4],
-            [bounds.getEast() + TILE_SIZE * 4, bounds.getNorth() + TILE_SIZE * 4],
-            [bounds.getWest() - TILE_SIZE * 4, bounds.getNorth() + TILE_SIZE * 4],
-            [bounds.getWest() - TILE_SIZE * 4, bounds.getSouth() - TILE_SIZE * 4],
-          ],
-          0.99
-        ),
-      ],
-    });
-    return;
-  }
-
-  const features: GeoJSON.Feature<GeoJSON.Polygon>[] = [];
-
-  for (let tileX = minTileX; tileX <= maxTileX; tileX += 1) {
-    for (let tileY = minTileY; tileY <= maxTileY; tileY += 1) {
-      features.push(
-        createFogFeature(
-          createTilePolygon(tileX, tileY),
-          getFogOpacity(tileX, tileY, discoveredTileIds)
-        )
-      );
-    }
-  }
-
-  source.setData({
-    type: "FeatureCollection",
-    features,
-  });
-}
-
-function createFogFeature(
-  coordinates: number[][],
-  opacity: number
-): GeoJSON.Feature<GeoJSON.Polygon> {
-  return {
-    type: "Feature",
-    geometry: {
-      type: "Polygon",
-      coordinates: [coordinates],
-    },
-    properties: {
-      opacity,
-      status: opacity === 0 ? "discovered" : "fog",
-    },
-  };
-}
-
-function getFogOpacity(
-  tileX: number,
-  tileY: number,
-  discoveredTileIds: Set<string>
+function updateFogRevealPoints(
+  map: maplibregl.Map,
+  discoveredTileIds: Set<string>,
+  setFogRevealPoints: (points: FogRevealPoint[]) => void
 ) {
-  const opacityByDistance = [0, 0.34, 0.58, 0.78, 0.92, 0.99];
+  const bounds = map.getBounds();
+  const width = map.getContainer().clientWidth;
+  const height = map.getContainer().clientHeight;
+  const revealPoints = [...discoveredTileIds]
+    .map((tileId) => tileId.split("_").map(Number))
+    .filter(([tileX, tileY]) => {
+      const tileWest = tileX * TILE_SIZE;
+      const tileEast = tileWest + TILE_SIZE;
+      const tileSouth = tileY * TILE_SIZE;
+      const tileNorth = tileSouth + TILE_SIZE;
 
-  for (let distance = 0; distance < opacityByDistance.length; distance += 1) {
-    for (let xOffset = -distance; xOffset <= distance; xOffset += 1) {
-      for (let yOffset = -distance; yOffset <= distance; yOffset += 1) {
-        if (Math.max(Math.abs(xOffset), Math.abs(yOffset)) !== distance) {
-          continue;
-        }
+      return (
+        tileEast >= bounds.getWest() - TILE_SIZE * 8 &&
+        tileWest <= bounds.getEast() + TILE_SIZE * 8 &&
+        tileNorth >= bounds.getSouth() - TILE_SIZE * 8 &&
+        tileSouth <= bounds.getNorth() + TILE_SIZE * 8
+      );
+    })
+    .slice(-450)
+    .map(([tileX, tileY]) => {
+      const centerLon = (tileX + 0.5) * TILE_SIZE;
+      const centerLat = (tileY + 0.5) * TILE_SIZE;
+      const center = map.project([centerLon, centerLat]);
+      const left = map.project([tileX * TILE_SIZE, centerLat]);
+      const right = map.project([(tileX + 1) * TILE_SIZE, centerLat]);
+      const top = map.project([centerLon, (tileY + 1) * TILE_SIZE]);
+      const bottom = map.project([centerLon, tileY * TILE_SIZE]);
+      const tilePixelSize = Math.max(
+        Math.abs(right.x - left.x),
+        Math.abs(bottom.y - top.y)
+      );
 
-        if (discoveredTileIds.has(`${tileX + xOffset}_${tileY + yOffset}`)) {
-          return opacityByDistance[distance];
-        }
-      }
-    }
-  }
+      return {
+        r: clamp(tilePixelSize * 1.75, 42, 190),
+        x: center.x,
+        y: center.y,
+      };
+    })
+    .filter((point) => {
+      return (
+        point.x >= -point.r &&
+        point.x <= width + point.r &&
+        point.y >= -point.r &&
+        point.y <= height + point.r
+      );
+    });
 
-  return 1;
+  setFogRevealPoints(revealPoints);
+}
+
+function MapFogOverlay({ revealPoints }: { revealPoints: FogRevealPoint[] }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-[12] h-full w-full"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <radialGradient id="mq-fog-reveal-gradient">
+          <stop offset="0%" stopColor="black" />
+          <stop offset="50%" stopColor="black" />
+          <stop offset="76%" stopColor="#777" />
+          <stop offset="100%" stopColor="white" />
+        </radialGradient>
+        <filter id="mq-fog-clouds" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence
+            baseFrequency="0.008 0.018"
+            numOctaves="4"
+            seed="28"
+            type="fractalNoise"
+          />
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 0.72 0 0 0 0 0.75 0 0 0 0 0.76 0 0 0 0.42 0"
+          />
+          <feGaussianBlur stdDeviation="9" />
+        </filter>
+        <mask id="mq-fog-mask" maskUnits="userSpaceOnUse">
+          <rect width="100%" height="100%" fill="white" />
+          {revealPoints.map((point, index) => (
+            <circle
+              key={`${Math.round(point.x)}-${Math.round(point.y)}-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r={point.r}
+              fill="url(#mq-fog-reveal-gradient)"
+            />
+          ))}
+        </mask>
+      </defs>
+
+      <g mask="url(#mq-fog-mask)">
+        <rect width="100%" height="100%" fill="#020203" opacity="0.94" />
+        <rect width="100%" height="100%" filter="url(#mq-fog-clouds)" opacity="0.85" />
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(255,255,255,0.08)"
+          filter="url(#mq-fog-clouds)"
+          transform="translate(140 80) scale(1.2)"
+          opacity="0.55"
+        />
+      </g>
+    </svg>
+  );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
