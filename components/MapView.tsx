@@ -7,12 +7,16 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import MapHud from "./MapHud";
 import { savePlayer } from "../lib/playerService";
 import { supabase } from "../lib/supabase";
-import { createTilePolygon } from "../lib/tiles";
+import { createTilePolygon, TILE_SIZE } from "../lib/tiles";
 import { ActiveTrip, finishActiveTrip, getActiveTrip } from "../lib/trips";
 import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+const FOG_SOURCE_ID = "mq-map-fog";
+const FOG_LAYER_ID = "mq-map-fog-fill";
+const FOG_LINE_LAYER_ID = "mq-map-fog-line";
+const MAX_VISIBLE_FOG_TILES = 1600;
 
 export default function MapView({
   hasUnreadNotifications,
@@ -22,6 +26,7 @@ export default function MapView({
   onOpenNotifications: () => void;
 }) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
+  const discoveredTileIdsRef = useRef(new Set<string>());
   const suppressMapInteractionRef = useRef(false);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [isFollowingUser, setIsFollowingUser] = useState(true);
@@ -29,14 +34,14 @@ export default function MapView({
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
+    discoveredTileIdsRef.current.add(tileId);
+    updateVisibleFog(map, discoveredTileIdsRef.current);
 
     if (map.getSource(sourceId)) {
       return;
     }
 
     const [tileX, tileY] = tileId.split("_").map(Number);
-
-    removeFogTile(map, tileId);
 
     map.addSource(sourceId, {
       type: "geojson",
@@ -58,10 +63,6 @@ export default function MapView({
         "fill-color": "#ff6b00",
         "fill-opacity": 0.34,
       },
-    });
-
-    getNeighborTileIds(tileX, tileY).forEach((neighborTileId) => {
-      addFogTile(map, neighborTileId);
     });
   }, []);
 
@@ -91,6 +92,8 @@ export default function MapView({
     });
 
     nextMap.on("load", () => {
+      ensureFogLayer(nextMap);
+      updateVisibleFog(nextMap, discoveredTileIdsRef.current);
       setMap(nextMap);
     });
 
@@ -128,15 +131,22 @@ export default function MapView({
 
       setIsFollowingUser(false);
     };
+    const syncFog = () => {
+      updateVisibleFog(map, discoveredTileIdsRef.current);
+    };
 
     map.on("dragstart", disableFollowMode);
+    map.on("moveend", syncFog);
     map.on("zoomstart", disableFollowMode);
+    map.on("zoomend", syncFog);
     map.on("rotatestart", disableFollowMode);
     map.on("pitchstart", disableFollowMode);
 
     return () => {
       map.off("dragstart", disableFollowMode);
+      map.off("moveend", syncFog);
       map.off("zoomstart", disableFollowMode);
+      map.off("zoomend", syncFog);
       map.off("rotatestart", disableFollowMode);
       map.off("pitchstart", disableFollowMode);
     };
@@ -235,54 +245,46 @@ export default function MapView({
   );
 }
 
-function getNeighborTileIds(tileX: number, tileY: number) {
-  const neighbors: string[] = [];
-
-  for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
-    for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
-      if (xOffset === 0 && yOffset === 0) {
-        continue;
-      }
-
-      neighbors.push(`${tileX + xOffset}_${tileY + yOffset}`);
-    }
-  }
-
-  return neighbors;
-}
-
-function addFogTile(map: maplibregl.Map, tileId: string) {
-  const discoveredSourceId = `tile-${tileId}`;
-  const sourceId = `fog-tile-${tileId}`;
-  const lineId = `fog-tile-line-${tileId}`;
-
-  if (map.getSource(discoveredSourceId) || map.getSource(sourceId)) {
+function ensureFogLayer(map: maplibregl.Map) {
+  if (map.getSource(FOG_SOURCE_ID)) {
     return;
   }
 
-  const [tileX, tileY] = tileId.split("_").map(Number);
-
-  map.addSource(sourceId, {
+  map.addSource(FOG_SOURCE_ID, {
     type: "geojson",
     data: {
-      type: "Feature",
-      geometry: {
-        type: "Polygon",
-        coordinates: [createTilePolygon(tileX, tileY)],
-      },
-      properties: {
-        status: "neighbor-fog",
-      },
+      type: "FeatureCollection",
+      features: [],
     },
   });
 
   map.addLayer({
-    id: sourceId,
+    id: FOG_LAYER_ID,
     type: "fill",
-    source: sourceId,
+    source: FOG_SOURCE_ID,
     paint: {
-      "fill-color": "#f97316",
+      "fill-color": "#050506",
       "fill-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        9,
+        0.72,
+        13,
+        0.58,
+        16,
+        0.46,
+      ],
+    },
+  });
+
+  map.addLayer({
+    id: FOG_LINE_LAYER_ID,
+    type: "line",
+    source: FOG_SOURCE_ID,
+    paint: {
+      "line-color": "#f97316",
+      "line-opacity": [
         "interpolate",
         ["linear"],
         ["zoom"],
@@ -291,47 +293,62 @@ function addFogTile(map: maplibregl.Map, tileId: string) {
         13,
         0.08,
         16,
-        0.12,
+        0.14,
       ],
-    },
-  });
-
-  map.addLayer({
-    id: lineId,
-    type: "line",
-    source: sourceId,
-    paint: {
-      "line-color": "#fbbf24",
-      "line-dasharray": [1.5, 2.5],
-      "line-opacity": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        9,
-        0.08,
-        13,
-        0.18,
-        16,
-        0.26,
-      ],
-      "line-width": 1,
+      "line-width": 0.7,
     },
   });
 }
 
-function removeFogTile(map: maplibregl.Map, tileId: string) {
-  const sourceId = `fog-tile-${tileId}`;
-  const lineId = `fog-tile-line-${tileId}`;
+function updateVisibleFog(map: maplibregl.Map, discoveredTileIds: Set<string>) {
+  ensureFogLayer(map);
 
-  if (map.getLayer(lineId)) {
-    map.removeLayer(lineId);
+  const source = map.getSource(FOG_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+
+  if (!source) {
+    return;
   }
 
-  if (map.getLayer(sourceId)) {
-    map.removeLayer(sourceId);
+  const bounds = map.getBounds();
+  const minTileX = Math.floor(bounds.getWest() / TILE_SIZE) - 1;
+  const maxTileX = Math.floor(bounds.getEast() / TILE_SIZE) + 1;
+  const minTileY = Math.floor(bounds.getSouth() / TILE_SIZE) - 1;
+  const maxTileY = Math.floor(bounds.getNorth() / TILE_SIZE) + 1;
+  const tileCount = (maxTileX - minTileX + 1) * (maxTileY - minTileY + 1);
+
+  if (tileCount > MAX_VISIBLE_FOG_TILES) {
+    source.setData({
+      type: "FeatureCollection",
+      features: [],
+    });
+    return;
   }
 
-  if (map.getSource(sourceId)) {
-    map.removeSource(sourceId);
+  const features: GeoJSON.Feature<GeoJSON.Polygon>[] = [];
+
+  for (let tileX = minTileX; tileX <= maxTileX; tileX += 1) {
+    for (let tileY = minTileY; tileY <= maxTileY; tileY += 1) {
+      const tileId = `${tileX}_${tileY}`;
+
+      if (discoveredTileIds.has(tileId)) {
+        continue;
+      }
+
+      features.push({
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [createTilePolygon(tileX, tileY)],
+        },
+        properties: {
+          status: "fog",
+        },
+      });
+    }
   }
+
+  source.setData({
+    type: "FeatureCollection",
+    features,
+  });
 }
