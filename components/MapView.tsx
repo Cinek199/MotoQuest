@@ -501,28 +501,7 @@ function drawCloudTexture(
   context.globalCompositeOperation = "screen";
 
   for (let index = 0; index < 180; index += 1) {
-    const x = seededNoise(index, 13.17) * width;
-    const y = seededNoise(index, 91.73) * height;
-    const radius = 34 + seededNoise(index, 41.29) * 92;
-    const opacity = 0.035 + seededNoise(index, 7.61) * 0.085;
-    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-
-    gradient.addColorStop(0, `rgba(230, 235, 232, ${opacity})`);
-    gradient.addColorStop(0.38, `rgba(185, 192, 190, ${opacity * 0.55})`);
-    gradient.addColorStop(1, "rgba(90, 98, 98, 0)");
-
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.ellipse(
-      x,
-      y,
-      radius * (1.35 + seededNoise(index, 5.33) * 1.25),
-      radius * (0.22 + seededNoise(index, 2.77) * 0.34),
-      seededNoise(index, 19.91) * Math.PI,
-      0,
-      Math.PI * 2
-    );
-    context.fill();
+    drawFogWisp(context, width, height, index);
   }
 
   context.globalCompositeOperation = "source-over";
@@ -560,6 +539,45 @@ function drawDiscoveryBoundary(
   context.lineWidth = 2;
   context.stroke();
   context.restore();
+}
+
+function drawFogWisp(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  index: number
+) {
+  const startX = seededNoise(index, 13.17) * width;
+  const startY = seededNoise(index, 91.73) * height;
+  const length = 90 + seededNoise(index, 31.41) * 220;
+  const angle = seededNoise(index, 19.91) * Math.PI * 2;
+  const steps = 8 + Math.floor(seededNoise(index, 71.3) * 8);
+  const baseOpacity = 0.025 + seededNoise(index, 7.61) * 0.045;
+
+  for (let step = 0; step < steps; step += 1) {
+    const progress = step / Math.max(1, steps - 1);
+    const wave = Math.sin(progress * Math.PI * 2 + seededNoise(index, 44.2) * 6);
+    const x =
+      startX +
+      Math.cos(angle) * length * (progress - 0.5) +
+      Math.cos(angle + Math.PI / 2) * wave * 42;
+    const y =
+      startY +
+      Math.sin(angle) * length * (progress - 0.5) +
+      Math.sin(angle + Math.PI / 2) * wave * 42;
+    const radius = 34 + seededNoise(index * 17 + step, 41.29) * 82;
+    const opacity = baseOpacity * (0.45 + Math.sin(progress * Math.PI) * 0.75);
+    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+
+    gradient.addColorStop(0, `rgba(230, 235, 232, ${opacity})`);
+    gradient.addColorStop(0.52, `rgba(185, 192, 190, ${opacity * 0.45})`);
+    gradient.addColorStop(1, "rgba(90, 98, 98, 0)");
+
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.fill();
+  }
 }
 
 function seededNoise(index: number, seed: number) {
