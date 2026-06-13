@@ -145,81 +145,46 @@ export default function AchievementsPanel() {
   const totalXp = achievements.reduce((sum, achievement) => {
     return sum + achievement.xp;
   }, 0);
+  const completedGoals = GOALS.filter((goal) => {
+    return unlockedIds.has(goal.id) || getGoalValue(goal, progress) >= goal.target;
+  }).length;
+  const overallPercent = Math.round((completedGoals / GOALS.length) * 100);
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-orange-500/20 bg-zinc-950 shadow-2xl shadow-black/40">
-      <div className="border-b border-zinc-800 bg-black/35 px-5 py-4">
-        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
-          Odznaki
-        </div>
-        <div className="mt-1 flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-black text-white">Osiagniecia</h2>
-          <div className="text-right">
-            <div className="text-2xl font-black text-orange-500">
-              {achievements.length}
-            </div>
-            <div className="text-[10px] font-black uppercase text-zinc-500">
-              zdobyte
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
+      <div className="space-y-3 p-3 sm:p-4">
+        <SegmentedTabs labels={["Wszystkie", "Odkryte", "Wyzwania", "Trasy"]} />
 
-      <div className="p-5">
-        <div className="mb-4 grid gap-3 sm:grid-cols-2">
-          <SummaryCard label="XP z osiagniec" value={`+${totalXp}`} />
-          <SummaryCard label="Cele w katalogu" value={String(GOALS.length)} />
+        <div className="grid grid-cols-3 gap-2">
+          <SummaryCard label="Zdobyte" value={String(achievements.length)} />
+          <SummaryCard label="XP z odznak" value={`+${totalXp}`} />
+          <SummaryCard label="Postep" value={`${overallPercent}%`} />
+        </div>
+
+        <div className="h-3 overflow-hidden rounded-full bg-zinc-900">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-lime-400 transition-all"
+            style={{
+              width: `${overallPercent}%`,
+            }}
+          />
         </div>
 
         <div className="space-y-2">
-          {GOALS.map((goal) => {
+          {GOALS.map((goal, index) => {
             const value = getGoalValue(goal, progress);
             const unlocked = unlockedIds.has(goal.id) || value >= goal.target;
             const percent = Math.min(100, Math.round((value / goal.target) * 100));
 
             return (
-              <div
+              <GoalCard
                 key={goal.id}
-                className={[
-                  "rounded-[1.5rem] border p-4",
-                  unlocked
-                    ? "border-orange-500/30 bg-orange-500/10"
-                    : "border-zinc-800 bg-black/45",
-                ].join(" ")}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="truncate font-black text-white">
-                      {goal.title}
-                    </div>
-                    <div className="mt-1 text-xs font-bold uppercase text-zinc-500">
-                      {Math.min(value, goal.target).toFixed(goal.unit === "km" ? 1 : 0)}
-                      {" / "}
-                      {goal.target} {goal.unit}
-                    </div>
-                  </div>
-
-                  <span
-                    className={[
-                      "shrink-0 rounded-full border px-3 py-1 text-sm font-black",
-                      unlocked
-                        ? "border-orange-500/30 bg-orange-500 text-black"
-                        : "border-zinc-700 bg-zinc-950 text-zinc-400",
-                    ].join(" ")}
-                  >
-                    +{goal.xp} XP
-                  </span>
-                </div>
-
-                <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-orange-500 transition-all"
-                    style={{
-                      width: `${percent}%`,
-                    }}
-                  />
-                </div>
-              </div>
+                goal={goal}
+                index={index}
+                percent={percent}
+                unlocked={unlocked}
+                value={value}
+              />
             );
           })}
         </div>
@@ -228,15 +193,116 @@ export default function AchievementsPanel() {
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function SegmentedTabs({ labels }: { labels: string[] }) {
   return (
-    <div className="rounded-[1.5rem] border border-zinc-800 bg-black/45 p-4">
-      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-        {label}
-      </div>
-      <div className="mt-1 text-3xl font-black text-orange-500">{value}</div>
+    <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-black/45 p-1">
+      {labels.map((label, index) => (
+        <button
+          key={label}
+          type="button"
+          className={[
+            "min-h-10 rounded-xl px-1 text-[10px] font-black transition",
+            index === 0
+              ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+              : "text-zinc-400 hover:text-white",
+          ].join(" ")}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
+}
+
+function GoalCard({
+  goal,
+  index,
+  percent,
+  unlocked,
+  value,
+}: {
+  goal: AchievementGoal;
+  index: number;
+  percent: number;
+  unlocked: boolean;
+  value: number;
+}) {
+  return (
+    <article
+      className={[
+        "overflow-hidden rounded-[1.35rem] border p-3 transition",
+        unlocked
+          ? "border-orange-500/35 bg-orange-500/10 shadow-lg shadow-orange-950/10"
+          : "border-white/10 bg-black/45",
+      ].join(" ")}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={[
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-sm font-black",
+            unlocked
+              ? "border-orange-500/40 bg-orange-500 text-black"
+              : "border-white/10 bg-zinc-950 text-zinc-500",
+          ].join(" ")}
+        >
+          {unlocked ? "OK" : index + 1}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-black text-white">
+                {goal.title}
+              </div>
+              <div className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+                {formatGoalValue(value, goal)} / {goal.target} {goal.unit}
+              </div>
+            </div>
+
+            <span
+              className={[
+                "shrink-0 rounded-full border px-3 py-1 text-xs font-black",
+                unlocked
+                  ? "border-orange-500/40 bg-orange-500 text-black"
+                  : "border-white/10 bg-zinc-950 text-zinc-400",
+              ].join(" ")}
+            >
+              +{goal.xp} XP
+            </span>
+          </div>
+
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-zinc-900">
+            <div
+              className={[
+                "h-full rounded-full transition-all",
+                unlocked
+                  ? "bg-gradient-to-r from-orange-500 to-lime-400"
+                  : "bg-orange-500",
+              ].join(" ")}
+              style={{
+                width: `${percent}%`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.25rem] border border-white/10 bg-black/45 p-3">
+      <div className="truncate text-[9px] font-black uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-1 truncate text-xl font-black text-orange-400">{value}</div>
+    </div>
+  );
+}
+
+function formatGoalValue(value: number, goal: AchievementGoal) {
+  return Math.min(value, goal.target).toFixed(goal.unit === "km" ? 1 : 0);
 }
 
 function getGoalValue(

@@ -1,3 +1,5 @@
+import { addAchievementNotification } from "./notifications";
+
 export function unlockAchievement(
   id: string,
   title: string,
@@ -25,6 +27,12 @@ export function unlockAchievement(
     "mq_achievements",
     JSON.stringify(achievements)
   );
+
+  addAchievementNotification({
+    achievementId: id,
+    title,
+    xp,
+  });
 
   return true;
 }

@@ -121,13 +121,29 @@ export default function GaragePanel() {
     setActiveBikeIdState(bikeId);
     await syncPlayer();
   };
+  const activeBike = garage.find((bike) => bike.id === activeBikeId) || null;
+  const otherBikes = garage.filter((bike) => bike.id !== activeBikeId);
 
   return (
-    <div className="overflow-hidden rounded-[1.7rem] border border-orange-500/20 bg-zinc-950 shadow-2xl shadow-black/40">
+    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
       <PanelHeader eyebrow="Maszyny" title="Garaz" count={garage.length} />
 
       <div className="grid gap-4 p-4 sm:p-5">
-        <div className="grid gap-2 rounded-[1.35rem] border border-zinc-800 bg-black/45 p-3 sm:grid-cols-2">
+        {activeBike ? (
+          <BikeHero bike={activeBike} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-black/35 p-5 text-zinc-500">
+            Brak motocykli w garazu
+          </div>
+        )}
+
+        <div className="grid gap-2 rounded-[1.5rem] border border-white/10 bg-black/45 p-3 shadow-xl shadow-black/20 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-500">
+              Dodaj motocykl
+            </div>
+          </div>
+
           <GarageInput placeholder="Marka" value={brand} onChange={setBrand} />
           <GarageInput placeholder="Model" value={model} onChange={setModel} />
           <GarageInput placeholder="Rok" value={year} onChange={setYear} />
@@ -161,7 +177,7 @@ export default function GaragePanel() {
           {saveError && <Notice tone="red" text={saveError} />}
 
           {imageUrl && (
-            <div className="overflow-hidden rounded-2xl border border-zinc-700 sm:col-span-2">
+            <div className="overflow-hidden rounded-2xl border border-white/10 sm:col-span-2">
               <img src={imageUrl} alt="" className="h-44 w-full object-cover" />
             </div>
           )}
@@ -172,7 +188,7 @@ export default function GaragePanel() {
             placeholder="Aktualny przebieg motocykla"
             value={initialDistance}
             onChange={(e) => setInitialDistance(e.target.value)}
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500 sm:col-span-2"
+            className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 sm:col-span-2"
           />
 
           <button
@@ -184,23 +200,69 @@ export default function GaragePanel() {
           </button>
         </div>
 
-        <div className="space-y-3">
-          {garage.length === 0 && (
-            <div className="rounded-2xl border border-zinc-800 bg-black/45 p-5 text-zinc-500">
-              Brak motocykli w garazu
+        {otherBikes.length > 0 && (
+          <div className="space-y-3">
+            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-lime-400">
+              Moje motocykle
             </div>
-          )}
 
-          {garage.map((bike) => (
+            {otherBikes.map((bike) => (
             <BikeCard
               key={bike.id}
-              active={activeBikeId === bike.id}
+              active={false}
               bike={bike}
               onActivate={() => activateBike(bike.id)}
             />
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BikeHero({ bike }: { bike: Bike }) {
+  return (
+    <article className="overflow-hidden rounded-[1.5rem] border border-orange-500/35 bg-black shadow-xl shadow-orange-500/10">
+      <div className="relative h-56 bg-zinc-950">
+        {bike.imageUrl ? (
+          <img src={bike.imageUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.16),transparent_45%),linear-gradient(135deg,#18181b,#020202)]">
+            <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-orange-500/30 bg-orange-500/10 text-3xl font-black text-orange-400">
+              M
+            </div>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute right-3 top-3 rounded-full border border-lime-500/30 bg-lime-500/15 px-3 py-1 text-[10px] font-black uppercase text-lime-300">
+          Aktywny
+        </div>
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="text-2xl font-black text-white">
+            {bike.brand} {bike.model}
+          </div>
+          <div className="mt-1 text-sm font-bold text-zinc-300">
+            {bike.year || "Brak rocznika"} / {bike.engine || "Brak pojemnosci"}
+          </div>
         </div>
       </div>
+
+      <div className="grid grid-cols-2 border-t border-white/10">
+        <BikeMiniMetric label="Przebieg" value={`${bike.totalDistanceKm.toFixed(1)} km`} />
+        <BikeMiniMetric label="Trasy" value="Aktywny" />
+      </div>
+    </article>
+  );
+}
+
+function BikeMiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-r border-white/10 p-4 last:border-r-0">
+      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-1 truncate text-lg font-black text-white">{value}</div>
     </div>
   );
 }
@@ -217,8 +279,8 @@ function BikeCard({
   return (
     <article
       className={[
-        "overflow-hidden rounded-[1.35rem] border bg-black/45",
-        active ? "border-orange-500 shadow-lg shadow-orange-500/10" : "border-zinc-800",
+        "overflow-hidden rounded-[1.5rem] border bg-black/45 transition hover:border-orange-500/35",
+        active ? "border-orange-500 shadow-lg shadow-orange-500/10" : "border-white/10",
       ].join(" ")}
     >
       {bike.imageUrl && (
@@ -243,7 +305,7 @@ function BikeCard({
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3">
+        <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950 p-3">
           <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
             Przebieg motocykla
           </div>
@@ -280,7 +342,7 @@ function GarageInput({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500"
+      className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
     />
   );
 }
@@ -310,8 +372,9 @@ function PanelHeader({
   title: string;
 }) {
   return (
-    <div className="border-b border-zinc-800 bg-black/45 px-4 py-4 sm:px-5">
-      <div className="flex items-end justify-between gap-4">
+    <div className="relative overflow-hidden border-b border-white/10 px-4 py-5 sm:px-5">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_42%),linear-gradient(135deg,rgba(24,24,27,0.9),rgba(0,0,0,0.35))]" />
+      <div className="relative flex items-end justify-between gap-4">
         <div>
           <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
             {eyebrow}
@@ -319,7 +382,7 @@ function PanelHeader({
           <h2 className="mt-1 text-2xl font-black text-white">{title}</h2>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-black text-orange-500">{count}</div>
+          <div className="text-2xl font-black text-orange-400">{count}</div>
           <div className="text-[10px] font-black uppercase text-zinc-500">
             szt.
           </div>

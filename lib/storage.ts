@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   activeBikeId: "mq_active_bike_id",
   distance: "mq_distance",
   garage: "mq_garage",
+  notifications: "mq_notifications",
   profile: "mq_profile",
   tiles: "mq_tiles",
   towns: "mq_towns",

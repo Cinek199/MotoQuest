@@ -24,24 +24,25 @@ export default function TripRoutePreview({
 
   if (route.length < 2 || points.length < 2) {
     return (
-      <div className="flex h-44 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-center text-sm font-bold text-zinc-500">
-        Za mało punktów GPS, żeby narysować trasę
+      <div className="flex h-44 items-center justify-center rounded-2xl border border-white/10 bg-black/40 px-4 text-center text-sm font-bold text-zinc-500">
+        Za malo punktow GPS, zeby narysowac trase
       </div>
     );
   }
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 ${className}`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#1f2937_0,transparent_35%),linear-gradient(135deg,#020617,#09090b)]" />
+      <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:24px_24px]" />
 
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         className="absolute inset-0 h-full w-full"
         role="img"
-        aria-label="Podgląd trasy GPS"
+        aria-label="Podglad trasy GPS"
       >
         <polyline
           points={path}
@@ -49,8 +50,8 @@ export default function TripRoutePreview({
           stroke="#38bdf8"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeOpacity="0.18"
-          strokeWidth="8"
+          strokeOpacity="0.2"
+          strokeWidth="9"
           vectorEffect="non-scaling-stroke"
         />
         <polyline
@@ -66,14 +67,14 @@ export default function TripRoutePreview({
           cx={start.x}
           cy={start.y}
           fill="#22c55e"
-          r="2.2"
+          r="2.4"
           vectorEffect="non-scaling-stroke"
         />
         <circle
           cx={end.x}
           cy={end.y}
           fill="#ef4444"
-          r="2.2"
+          r="2.4"
           vectorEffect="non-scaling-stroke"
         />
       </svg>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getActiveBike } from "../lib/garage";
 import { getProfile, PlayerProfile, saveProfile } from "../lib/profile";
 import { savePlayer } from "../lib/playerService";
-import { getNumber, STORAGE_KEYS } from "../lib/storage";
+import { getJson, getNumber, STORAGE_KEYS } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import type { PlayerStats } from "../lib/usePlayerStats";
 
@@ -19,8 +19,8 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
     nickname: "MotoManiak",
   });
   const [nickname, setNickname] = useState("");
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [status, setStatus] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     const savedProfile = getProfile();
@@ -31,6 +31,13 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
   const activeBike = getActiveBike();
   const distanceKm = getNumber(STORAGE_KEYS.distance);
+  const tripsCount = getJson<unknown[]>(STORAGE_KEYS.trips, []).length;
+  const voivodeshipCount = getJson<unknown[]>(
+    STORAGE_KEYS.voivodeships,
+    []
+  ).length;
+  const xpInLevel = stats.xp % 1000;
+  const xpPercent = Math.min(100, Math.round((xpInLevel / 1000) * 100));
 
   const syncPlayer = async () => {
     const {
@@ -89,103 +96,100 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   };
 
   return (
-    <section className="overflow-hidden rounded-[1.7rem] border border-orange-500/25 bg-zinc-950 shadow-2xl shadow-black/40">
-      <div className="border-b border-zinc-800 bg-black/45 px-4 py-4 sm:px-5">
-        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
-          Gracz
-        </div>
-        <h2 className="mt-1 text-2xl font-black text-white">Profil kierowcy</h2>
-      </div>
+    <section className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
+      <div className="p-3">
+        <div className="overflow-hidden rounded-[1.45rem] border border-white/10 bg-zinc-950/90">
+          <div className="relative p-4">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_46%)]" />
+            <div className="relative flex items-center gap-4">
+              <label className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-orange-500 bg-zinc-800 shadow-2xl shadow-orange-500/15">
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-4xl font-black text-orange-500">
+                    {profile.nickname.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingAvatar}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
 
-      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[260px_1fr]">
-        <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-5 text-center">
-          <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-orange-500 bg-zinc-800 shadow-2xl shadow-orange-500/15">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-4xl font-black text-orange-500">
-                {profile.nickname.slice(0, 1).toUpperCase()}
+                    if (file) {
+                      void uploadAvatar(file);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-2xl font-black text-white">
+                  {profile.nickname}
+                </div>
+                <div className="mt-1 text-sm font-black text-orange-400">
+                  Poziom {stats.level}
+                </div>
+                <div className="mt-2 text-xs font-semibold text-zinc-400">
+                  {activeBike
+                    ? `${activeBike.brand} ${activeBike.model}`
+                    : "Brak aktywnego motocykla"}
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="mt-4 text-2xl font-black text-white">
-            {profile.nickname}
-          </div>
-          <div className="mt-1 text-sm font-bold text-zinc-400">
-            LVL {stats.level}
-          </div>
-
-          <label className="mt-4 block cursor-pointer rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-300 transition hover:border-orange-500 hover:bg-orange-500 hover:text-black">
-            {uploadingAvatar ? "Wysylanie..." : "Zmien avatar"}
-            <input
-              type="file"
-              accept="image/*"
-              disabled={uploadingAvatar}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-
-                if (file) {
-                  void uploadAvatar(file);
-                }
-              }}
-              className="hidden"
-            />
-          </label>
-        </div>
-
-        <div className="space-y-4">
-          <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-4">
-            <label className="text-xs font-black uppercase tracking-widest text-zinc-500">
-              Nick
-            </label>
-            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-              <input
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                className="min-w-0 flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-bold outline-none transition focus:border-orange-500"
-              />
-              <button
-                type="button"
-                onClick={saveNickname}
-                className="rounded-2xl bg-orange-500 px-5 py-3 font-black text-black transition hover:bg-orange-400"
-              >
-                Zapisz
-              </button>
             </div>
-            {status && (
-              <div className="mt-2 text-sm font-bold text-orange-400">
-                {status}
+
+            <div className="relative mt-5">
+              <div className="mb-2 flex items-center justify-between text-xs font-black">
+                <span className="text-orange-400">XP</span>
+                <span className="text-zinc-300">{xpInLevel} / 1000</span>
               </div>
-            )}
+              <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className="h-full rounded-full bg-orange-500"
+                  style={{
+                    width: `${xpPercent}%`,
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <ProfileMetric label="XP" value={String(stats.xp)} />
+          <div className="grid grid-cols-2 border-t border-white/10">
+            <ProfileMetric label="Odkryte" value={`${voivodeshipCount}`} />
             <ProfileMetric label="Kafelki" value={String(stats.tiles)} />
-            <ProfileMetric label="Miasta" value={String(stats.towns)} />
-            <ProfileMetric label="Przebieg" value={`${distanceKm.toFixed(1)} km`} />
+            <ProfileMetric label="Trasy" value={String(tripsCount)} />
+            <ProfileMetric label="Dystans" value={`${distanceKm.toFixed(0)} km`} />
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-[1.35rem] border border-white/10 bg-black/45 p-3">
+          <label className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+            Nick
+          </label>
+          <div className="mt-2 grid gap-2">
+            <input
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              className="min-h-12 rounded-2xl border border-white/10 bg-zinc-950 px-4 font-bold outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
+            />
+            <button
+              type="button"
+              onClick={saveNickname}
+              className="min-h-12 rounded-2xl bg-orange-500 font-black text-black transition hover:bg-orange-400"
+            >
+              Zapisz
+            </button>
           </div>
 
-          <div className="rounded-[1.35rem] border border-zinc-800 bg-black/45 p-4">
-            <div className="text-xs font-black uppercase tracking-widest text-zinc-500">
-              Aktywny motocykl
-            </div>
-            <div className="mt-2 text-xl font-black text-white">
-              {activeBike
-                ? `${activeBike.brand} ${activeBike.model}`
-                : "Brak aktywnego motocykla"}
-            </div>
-            {activeBike && (
-              <div className="mt-1 text-sm text-zinc-400">
-                {activeBike.totalDistanceKm.toFixed(1)} km na tej maszynie
-              </div>
-            )}
-          </div>
+          {status && (
+            <div className="mt-2 text-sm font-bold text-orange-400">{status}</div>
+          )}
         </div>
       </div>
     </section>
@@ -194,11 +198,11 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
 function ProfileMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-black/45 p-4">
-      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+    <div className="border-r border-t border-white/10 p-4 last:border-r-0 odd:border-r">
+      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-black text-orange-500">{value}</div>
+      <div className="mt-1 text-2xl font-black text-white">{value}</div>
     </div>
   );
 }

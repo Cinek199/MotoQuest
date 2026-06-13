@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { unlockAchievement } from "../lib/achievements";
 import { downloadTripGpx } from "../lib/gpx";
 import { savePlayer } from "../lib/playerService";
 import { supabase } from "../lib/supabase";
@@ -10,8 +9,8 @@ import { getJson, getNumber, setJson, STORAGE_KEYS } from "../lib/storage";
 import {
   ActiveTrip,
   calculateAverageSpeedKmh,
-  calculateTripXp,
   FinishedTrip,
+  finishActiveTrip,
   getActiveTrip,
   saveActiveTrip,
 } from "../lib/trips";
@@ -68,67 +67,11 @@ export default function TripsPanel() {
   };
 
   const endTrip = async () => {
-    const latestActiveTrip = getActiveTrip();
+    const result = finishActiveTrip();
 
-    if (!latestActiveTrip) {
+    if (!result) {
       return;
     }
-
-    const distance = Math.max(
-      0,
-      getNumber(STORAGE_KEYS.distance) - latestActiveTrip.startDistance
-    );
-    const tiles = Math.max(
-      0,
-      getJson<string[]>(STORAGE_KEYS.tiles, []).length -
-        latestActiveTrip.startTiles
-    );
-    const towns = Math.max(
-      0,
-      getJson<string[]>(STORAGE_KEYS.towns, []).length -
-        latestActiveTrip.startTowns
-    );
-    const voivodeships = Math.max(
-      0,
-      getJson<string[]>(STORAGE_KEYS.voivodeships, []).length -
-        latestActiveTrip.startVoivodeships
-    );
-    const endedAt = Date.now();
-    const duration = Math.max(
-      1,
-      Math.floor((endedAt - latestActiveTrip.startedAt) / 1000 / 60)
-    );
-
-    const finishedTrip: FinishedTrip = {
-      averageSpeedKmh: calculateAverageSpeedKmh(distance, duration),
-      date: new Date(endedAt).toLocaleDateString("pl-PL"),
-      distance,
-      duration,
-      endedAt,
-      id: createTripId(latestActiveTrip.name, latestActiveTrip.startedAt, endedAt),
-      name: latestActiveTrip.name,
-      route: latestActiveTrip.route,
-      startedAt: latestActiveTrip.startedAt,
-      tiles,
-      towns,
-      voivodeships,
-      xp: calculateTripXp({
-        distance,
-        tiles,
-        towns,
-        voivodeships,
-      }),
-    };
-
-    const nextTrips = [
-      finishedTrip,
-      ...normalizeTrips(getJson<Partial<FinishedTrip>[]>(STORAGE_KEYS.trips, [])),
-    ];
-
-    setJson(STORAGE_KEYS.trips, nextTrips);
-    localStorage.removeItem(STORAGE_KEYS.activeTrip);
-
-    unlockTripAchievements(nextTrips, finishedTrip);
 
     const {
       data: { user },
@@ -138,7 +81,7 @@ export default function TripsPanel() {
       await savePlayer(user.id);
     }
 
-    setTrips(nextTrips);
+    setTrips(normalizeTrips(result.nextTrips));
     setActiveTrip(null);
   };
 
@@ -165,45 +108,61 @@ export default function TripsPanel() {
   };
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-orange-500/20 bg-zinc-950 shadow-2xl shadow-black/40">
-      <div className="border-b border-zinc-800 bg-black/35 px-5 py-4">
-        <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
-          Trasa
-        </div>
-        <h2 className="mt-1 text-2xl font-black text-white">Wyprawa</h2>
-      </div>
+    <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
+      <div className="space-y-4 p-3 sm:p-4">
+        <SegmentedTabs labels={["Wszystkie", "Aktywne", "Zakonczone"]} />
 
-      <div className="p-5">
         {!activeTrip ? (
-          <div className="space-y-3">
-            <input
-              value={tripName}
-              onChange={(e) => setTripName(e.target.value)}
-              placeholder="Np. Tatry Weekend"
-              className="w-full rounded-2xl border border-zinc-800 bg-black/45 px-4 py-4 font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-orange-500"
-            />
+          <div className="rounded-[1.4rem] border border-white/10 bg-zinc-950/80 p-3 shadow-xl shadow-black/20">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.28em] text-zinc-500">
+                  Nowa trasa
+                </div>
+                <div className="mt-1 text-lg font-black text-white">
+                  Rozpocznij wyprawe
+                </div>
+              </div>
+              <span className="rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-[11px] font-black text-green-300">
+                GPS ready
+              </span>
+            </div>
 
-            <button
-              onClick={startTrip}
-              className="w-full rounded-2xl bg-orange-500 py-4 font-black text-black shadow-lg shadow-orange-500/20 transition hover:bg-orange-400"
-            >
-              Rozpocznij wyprawe
-            </button>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                placeholder="Np. Tatry Weekend"
+                className="min-h-14 w-full rounded-2xl border border-white/10 bg-black/60 px-4 font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
+              />
+
+              <button
+                onClick={startTrip}
+                className="min-h-14 rounded-2xl bg-orange-500 px-6 font-black text-black shadow-lg shadow-orange-500/20 transition hover:bg-orange-400"
+              >
+                Start
+              </button>
+            </div>
           </div>
         ) : (
           <ActiveTripCard activeTrip={activeTrip} onEndTrip={endTrip} />
         )}
 
-        {trips.length > 0 && (
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center justify-between gap-3">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
               <h3 className="text-lg font-black text-white">Historia wypraw</h3>
-              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-bold text-zinc-400">
-                {trips.length}
-              </span>
+              <p className="text-xs font-semibold text-zinc-500">
+                Ostatnie zapisane trasy i galerie.
+              </p>
             </div>
+            <span className="rounded-full border border-white/10 bg-black px-3 py-1 text-xs font-black text-zinc-300">
+              {trips.length}
+            </span>
+          </div>
 
-            {trips.slice(0, 10).map((trip, index) => (
+          {trips.length > 0 ? (
+            trips.slice(0, 10).map((trip, index) => (
               <FinishedTripCard
                 key={`${trip.startedAt}-${index}`}
                 trip={trip}
@@ -211,9 +170,21 @@ export default function TripsPanel() {
                 onDelete={() => deleteTrip(index)}
                 onOpenDetails={() => setSelectedTrip(trip)}
               />
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="rounded-[1.75rem] border border-dashed border-white/10 bg-black/35 px-5 py-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-orange-500/30 bg-orange-500/10 text-xl font-black text-orange-400">
+                0
+              </div>
+              <div className="mt-4 text-lg font-black text-white">
+                Brak zapisanych wypraw
+              </div>
+              <p className="mt-1 text-sm font-semibold text-zinc-500">
+                Nazwij trase i ruszaj, a pierwsza karta pojawi sie tutaj.
+              </p>
+            </div>
+          )}
+        </div>
 
         {selectedTrip && (
           <TripDetailsModal
@@ -226,6 +197,27 @@ export default function TripsPanel() {
   );
 }
 
+function SegmentedTabs({ labels }: { labels: string[] }) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/45 p-1">
+      {labels.map((label, index) => (
+        <button
+          key={label}
+          type="button"
+          className={[
+            "min-h-10 rounded-xl px-2 text-[11px] font-black transition",
+            index === 0
+              ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
+              : "text-zinc-400 hover:text-white",
+          ].join(" ")}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ActiveTripCard({
   activeTrip,
   onEndTrip,
@@ -233,29 +225,55 @@ function ActiveTripCard({
   activeTrip: ActiveTrip;
   onEndTrip: () => void;
 }) {
-  const durationMinutes = Math.max(
-    1,
-    Math.floor((Date.now() - activeTrip.startedAt) / 1000 / 60)
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const durationTime = formatRecordingTime(
+    Math.max(0, Math.floor((now - activeTrip.startedAt) / 1000))
   );
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-[1.75rem] border border-green-500/30 bg-green-500/10 p-5 shadow-xl shadow-green-950/20">
-        <div className="text-xs font-black uppercase tracking-[0.25em] text-green-400">
-          Wyprawa aktywna
+    <div className="overflow-hidden rounded-[1.75rem] border border-green-500/25 bg-zinc-950 shadow-xl shadow-black/30">
+      <div className="relative p-5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.22),transparent_42%)]" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-green-300">
+              <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_18px_rgba(34,197,94,0.9)]" />
+              Nagrywanie
+            </div>
+            <div className="mt-2 text-2xl font-black text-white">
+              {activeTrip.name}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-zinc-500">
+              Punkty GPS dopisuja sie podczas jazdy.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-center">
+            <div className="text-[10px] font-black uppercase text-green-300">
+              Czas
+            </div>
+            <div className="text-lg font-black text-white">
+              {durationTime}
+            </div>
+          </div>
         </div>
-        <div className="mt-1 text-2xl font-black text-orange-500">
-          {activeTrip.name}
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-zinc-300">
-          <TripMetric label="Czas" value={`${durationMinutes} min`} />
+
+        <div className="relative mt-4 grid grid-cols-2 gap-2">
+          <TripMetric label="Czas trasy" value={durationTime} />
           <TripMetric label="Punkty GPS" value={String(activeTrip.route.length)} />
         </div>
       </div>
 
       <button
         onClick={onEndTrip}
-        className="w-full rounded-2xl bg-red-600 py-4 font-black text-white transition hover:bg-red-500"
+        className="w-full border-t border-red-500/20 bg-red-600/90 py-4 font-black text-white transition hover:bg-red-500"
       >
         Zakoncz wyprawe
       </button>
@@ -281,61 +299,79 @@ function FinishedTripCard({
   const [shareStatus, setShareStatus] = useState("");
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-800 bg-black/45 p-3 text-sm transition hover:border-orange-500/45">
+    <article className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 text-sm shadow-xl shadow-black/25 transition hover:border-orange-500/35">
+      <div className="relative min-h-36 overflow-hidden bg-black">
+        {coverPhoto ? (
+          <img src={coverPhoto} alt="" className="h-44 w-full object-cover" />
+        ) : (
+          <TripRoutePreview route={trip.route} className="h-44 rounded-none border-0" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-400">
+              Wyprawa #{index + 1}
+            </div>
+            <div className="mt-1 text-2xl font-black leading-tight text-white">
+              {trip.name}
+            </div>
+            <div className="mt-1 text-xs font-bold text-zinc-300">
+              {trip.date}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-orange-500/30 bg-orange-500/15 px-3 py-2 text-right backdrop-blur">
+            <div className="text-[10px] font-black uppercase text-orange-300">
+              XP
+            </div>
+            <div className="text-lg font-black text-white">+{trip.xp}</div>
+          </div>
+        </div>
+      </div>
+
       {coverPhoto && (
-        <img
-          src={coverPhoto}
-          alt=""
-          className="mb-3 h-40 w-full rounded-xl object-cover"
-        />
-      )}
-
-      <div className="px-1 text-xl font-black text-white">{trip.name}</div>
-      <div className="mt-1 px-1 text-zinc-400">{trip.date}</div>
-
-      <div className="mt-3">
-        <TripRoutePreview route={trip.route} />
-      </div>
-
-      <TripMetricsGrid trip={trip} />
-
-      <div className="mt-3 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 font-black text-orange-400">
-        +{trip.xp} XP z wyprawy
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={onOpenDetails}
-          className="rounded-2xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 font-black text-orange-400 transition hover:bg-orange-500 hover:text-black"
-        >
-          Szczegoly trasy
-        </button>
-
-        <button
-          type="button"
-          onClick={() => shareTrip(trip, setShareStatus)}
-          className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 font-black text-zinc-200 transition hover:border-orange-500 hover:text-orange-400"
-        >
-          Udostepnij
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onDelete}
-        className="mt-2 w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-black text-red-300 transition hover:bg-red-600 hover:text-white"
-      >
-        Usun wyprawe
-      </button>
-
-      {shareStatus && (
-        <div className="mt-2 rounded-2xl border border-green-500/25 bg-green-500/10 px-4 py-3 text-xs font-black text-green-300">
-          {shareStatus}
+        <div className="px-3 pt-3">
+          <TripRoutePreview route={trip.route} className="h-36" />
         </div>
       )}
 
-      <TripPhotosPanel tripId={trip.id} />
+      <div className="p-3">
+        <TripMetricsGrid trip={trip} />
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            className="rounded-2xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 font-black text-orange-300 transition hover:bg-orange-500 hover:text-black"
+          >
+            Szczegoly
+          </button>
+
+          <button
+            type="button"
+            onClick={() => shareTrip(trip, setShareStatus)}
+            className="rounded-2xl border border-white/10 bg-black px-4 py-3 font-black text-zinc-200 transition hover:border-orange-500 hover:text-orange-300"
+          >
+            Udostepnij
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onDelete}
+          className="mt-2 w-full rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 font-black text-red-300 transition hover:bg-red-600 hover:text-white"
+        >
+          Usun wyprawe
+        </button>
+
+        {shareStatus && (
+          <div className="mt-2 rounded-2xl border border-green-500/25 bg-green-500/10 px-4 py-3 text-xs font-black text-green-300">
+            {shareStatus}
+          </div>
+        )}
+
+        <TripPhotosPanel tripId={trip.id} />
+      </div>
     </article>
   );
 }
@@ -350,22 +386,24 @@ function TripDetailsModal({
   const [shareStatus, setShareStatus] = useState("");
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/85 p-4 backdrop-blur">
-      <div className="mx-auto max-w-5xl rounded-3xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/90 p-4 backdrop-blur">
+      <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#08090b] shadow-2xl">
+        <div className="relative p-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.18),transparent_44%)]" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-[0.25em] text-orange-500">
+            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-500">
               Szczegoly wyprawy
             </div>
             <h2 className="mt-2 text-3xl font-black text-white">{trip.name}</h2>
-            <div className="mt-1 text-zinc-400">{trip.date}</div>
+            <div className="mt-1 text-sm font-bold text-zinc-400">{trip.date}</div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
             <button
               type="button"
               onClick={() => shareTrip(trip, setShareStatus)}
-              className="rounded-xl border border-zinc-700 px-4 py-3 font-bold text-white hover:bg-zinc-800"
+              className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-black text-white hover:border-orange-500/50"
             >
               Udostepnij
             </button>
@@ -373,39 +411,40 @@ function TripDetailsModal({
               type="button"
               onClick={() => downloadTripGpx(trip)}
               disabled={trip.route.length < 2}
-              className="rounded-xl bg-orange-500 px-4 py-3 font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Eksport GPX
+              GPX
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-zinc-700 px-4 py-3 font-bold text-white hover:bg-zinc-800"
+              className="rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-black text-white hover:border-orange-500/50"
             >
               Zamknij
             </button>
           </div>
         </div>
+        </div>
 
-        <div className="mt-5">
+        <div className="px-5 pb-5">
           <TripRoutePreview
             route={trip.route}
             interactive
-            className="h-[60vh] min-h-[360px]"
+            className="h-[55vh] min-h-[320px]"
           />
-        </div>
 
-        <TripMetricsGrid trip={trip} wide />
+          <TripMetricsGrid trip={trip} wide />
 
-        <div className="mt-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 font-bold text-orange-300">
-          +{trip.xp} XP z tej wyprawy
-        </div>
-
-        {shareStatus && (
-          <div className="mt-4 rounded-2xl border border-green-500/25 bg-green-500/10 p-4 text-sm font-black text-green-300">
-            {shareStatus}
+          <div className="mt-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 font-black text-orange-300">
+            +{trip.xp} XP z tej wyprawy
           </div>
-        )}
+
+          {shareStatus && (
+            <div className="mt-4 rounded-2xl border border-green-500/25 bg-green-500/10 p-4 text-sm font-black text-green-300">
+              {shareStatus}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -440,11 +479,11 @@ function TripMetricsGrid({
 
 function TripMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3">
-      <div className="text-[10px] font-black uppercase text-zinc-500">
+    <div className="rounded-2xl border border-white/10 bg-black/45 px-3 py-3">
+      <div className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-500">
         {label}
       </div>
-      <div className="mt-1 font-black text-white">{value}</div>
+      <div className="mt-1 truncate font-black text-white">{value}</div>
     </div>
   );
 }
@@ -478,6 +517,16 @@ function normalizeTrips(trips: Partial<FinishedTrip>[]) {
 
 function safeNumber(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function formatRecordingTime(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [hours, minutes, seconds]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
 }
 
 function removeTripPhotosByTripId(tripId: string | undefined) {
@@ -640,25 +689,4 @@ function buildTripShareText(trip: FinishedTrip) {
     `Miejscowosci: ${trip.towns}`,
     `XP: +${trip.xp}`,
   ].join("\n");
-}
-
-function unlockTripAchievements(
-  trips: FinishedTrip[],
-  finishedTrip: FinishedTrip
-) {
-  if (trips.length >= 1) {
-    unlockAchievement("trip-1", "Pierwsza wyprawa", 250);
-  }
-
-  if (trips.length >= 5) {
-    unlockAchievement("trip-5", "5 wypraw", 1000);
-  }
-
-  if (trips.length >= 10) {
-    unlockAchievement("trip-10", "10 wypraw", 2500);
-  }
-
-  if (finishedTrip.distance >= 1000) {
-    unlockAchievement("trip-1000km", "1000 km w jednej wyprawie", 5000);
-  }
 }

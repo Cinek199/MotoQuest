@@ -1,3 +1,4 @@
+import { unlockAchievement } from "./achievements";
 import { calculateDistanceKm } from "./distance";
 import { getJson, setJson, STORAGE_KEYS } from "./storage";
 
@@ -44,6 +45,72 @@ export function getActiveTrip() {
 
 export function saveActiveTrip(trip: ActiveTrip) {
   setJson(STORAGE_KEYS.activeTrip, trip);
+}
+
+export function finishActiveTrip() {
+  const latestActiveTrip = getActiveTrip();
+
+  if (!latestActiveTrip) {
+    return null;
+  }
+
+  const distance = Math.max(
+    0,
+    getNumber(STORAGE_KEYS.distance) - latestActiveTrip.startDistance
+  );
+  const tiles = Math.max(
+    0,
+    getJson<string[]>(STORAGE_KEYS.tiles, []).length - latestActiveTrip.startTiles
+  );
+  const towns = Math.max(
+    0,
+    getJson<string[]>(STORAGE_KEYS.towns, []).length - latestActiveTrip.startTowns
+  );
+  const voivodeships = Math.max(
+    0,
+    getJson<string[]>(STORAGE_KEYS.voivodeships, []).length -
+      latestActiveTrip.startVoivodeships
+  );
+  const endedAt = Date.now();
+  const duration = Math.max(
+    1,
+    Math.floor((endedAt - latestActiveTrip.startedAt) / 1000 / 60)
+  );
+
+  const finishedTrip: FinishedTrip = {
+    averageSpeedKmh: calculateAverageSpeedKmh(distance, duration),
+    date: new Date(endedAt).toLocaleDateString("pl-PL"),
+    distance,
+    duration,
+    endedAt,
+    id: createTripId(latestActiveTrip.name, latestActiveTrip.startedAt, endedAt),
+    name: latestActiveTrip.name,
+    route: latestActiveTrip.route,
+    startedAt: latestActiveTrip.startedAt,
+    tiles,
+    towns,
+    voivodeships,
+    xp: calculateTripXp({
+      distance,
+      tiles,
+      towns,
+      voivodeships,
+    }),
+  };
+
+  const nextTrips = [
+    finishedTrip,
+    ...getJson<FinishedTrip[]>(STORAGE_KEYS.trips, []),
+  ];
+
+  setJson(STORAGE_KEYS.trips, nextTrips);
+  localStorage.removeItem(STORAGE_KEYS.activeTrip);
+  unlockTripAchievements(nextTrips, finishedTrip);
+
+  return {
+    finishedTrip,
+    nextTrips,
+  };
 }
 
 export function appendActiveTripPoint(point: TripRoutePoint) {
@@ -106,4 +173,45 @@ export function calculateAverageSpeedKmh(distance: number, durationMinutes: numb
   }
 
   return distance / (durationMinutes / 60);
+}
+
+function createTripId(name: string, startedAt: unknown, endedAt: unknown) {
+  const start = safeNumber(startedAt, Date.now());
+  const end = safeNumber(endedAt, start);
+  const safeName = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `trip-${start}-${end}-${safeName || "wyprawa"}`;
+}
+
+function safeNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function getNumber(key: string) {
+  return safeNumber(Number(localStorage.getItem(key) || 0));
+}
+
+function unlockTripAchievements(
+  trips: FinishedTrip[],
+  finishedTrip: FinishedTrip
+) {
+  if (trips.length >= 1) {
+    unlockAchievement("trip-1", "Pierwsza wyprawa", 250);
+  }
+
+  if (trips.length >= 5) {
+    unlockAchievement("trip-5", "5 wypraw", 1000);
+  }
+
+  if (trips.length >= 10) {
+    unlockAchievement("trip-10", "10 wypraw", 2500);
+  }
+
+  if (finishedTrip.distance >= 1000) {
+    unlockAchievement("trip-1000km", "1000 km w jednej wyprawie", 5000);
+  }
 }

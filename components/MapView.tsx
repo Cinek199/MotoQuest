@@ -5,18 +5,29 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import MapHud from "./MapHud";
-import { createTilePolygon, getTileAreaKm2 } from "../lib/tiles";
+import { savePlayer } from "../lib/playerService";
+import { supabase } from "../lib/supabase";
+import { createTilePolygon } from "../lib/tiles";
+import { ActiveTrip, finishActiveTrip, getActiveTrip } from "../lib/trips";
 import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
-export default function MapView() {
+export default function MapView({
+  hasUnreadNotifications,
+  onOpenNotifications,
+}: {
+  hasUnreadNotifications: boolean;
+  onOpenNotifications: () => void;
+}) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
     const sourceId = `tile-${tileId}`;
+    const lineId = `tile-line-${tileId}`;
 
     if (map.getSource(sourceId)) {
       return;
@@ -42,7 +53,18 @@ export default function MapView() {
       source: sourceId,
       paint: {
         "fill-color": "#ff6b00",
-        "fill-opacity": 0.35,
+        "fill-opacity": 0.28,
+      },
+    });
+
+    map.addLayer({
+      id: lineId,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": "#ff8a1f",
+        "line-opacity": 0.8,
+        "line-width": 1.5,
       },
     });
   }, []);
@@ -71,7 +93,6 @@ export default function MapView() {
     });
 
     nextMap.on("load", () => {
-      nextMap.addControl(new maplibregl.NavigationControl(), "bottom-right");
       setMap(nextMap);
     });
 
@@ -81,32 +102,74 @@ export default function MapView() {
     };
   }, []);
 
+  useEffect(() => {
+    const syncActiveTrip = () => {
+      setActiveTrip(getActiveTrip());
+    };
+
+    syncActiveTrip();
+
+    const interval = window.setInterval(syncActiveTrip, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const stopActiveTrip = async () => {
+    const result = finishActiveTrip();
+
+    if (!result) {
+      return;
+    }
+
+    setActiveTrip(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await savePlayer(user.id);
+    }
+  };
+
   return (
-    <div className="relative min-h-[calc(100dvh-7rem)] overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/80 lg:min-h-[760px] lg:rounded-[2.4rem]">
+    <div className="relative min-h-[calc(100dvh-6rem)] overflow-hidden rounded-[2.15rem] border border-white/10 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-orange-500/10">
+      <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.12),transparent_34%),linear-gradient(180deg,rgba(0,0,0,0.12),transparent_35%,rgba(0,0,0,0.34))]" />
+
       <div
         ref={mapContainer}
-        className="h-[calc(100dvh-7rem)] min-h-[650px] w-full lg:h-[760px]"
+        className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
       />
 
       <MapHud
+        activeTrip={activeTrip}
         currentTown={currentTown}
         currentVoivodeship={currentVoivodeship}
         distanceKm={distanceKm}
-        discoveredAreaKm2={tilesCount * getTileAreaKm2()}
+        hasUnreadNotifications={hasUnreadNotifications}
+        onOpenNotifications={onOpenNotifications}
+        onStopRecording={stopActiveTrip}
         tilesCount={tilesCount}
+        onZoomIn={() => map?.zoomIn()}
+        onZoomOut={() => map?.zoomOut()}
       />
 
       {newVoivodeshipPopup && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-3xl border border-orange-500 bg-zinc-950 p-8 text-center shadow-2xl shadow-orange-500/20">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-orange-500 text-2xl font-black text-black">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-6 backdrop-blur">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-[2rem] border border-orange-500/40 bg-zinc-950 p-8 text-center shadow-2xl shadow-orange-500/20">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.24),transparent_44%)]" />
+            <div className="relative mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-orange-500 text-2xl font-black text-black shadow-lg shadow-orange-500/25">
               OK
             </div>
-            <div className="mt-4 text-zinc-400">Odkryto nowe wojewodztwo</div>
-            <div className="mt-2 text-3xl font-black text-orange-500">
+            <div className="relative mt-4 text-sm font-black uppercase tracking-[0.18em] text-zinc-500">
+              Odkryto region
+            </div>
+            <div className="relative mt-2 text-3xl font-black text-white">
               {newVoivodeshipPopup}
             </div>
-            <div className="mt-4 text-xl font-black text-green-400">+500 XP</div>
+            <div className="relative mt-4 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-5 py-2 text-xl font-black text-green-300">
+              +500 XP
+            </div>
           </div>
         </div>
       )}
