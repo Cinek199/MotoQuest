@@ -430,11 +430,19 @@ function MapFogOverlay({
   revealTiles: FogRevealTile[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [fogTexture, setFogTexture] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const image = new Image();
+
+    image.onload = () => setFogTexture(image);
+    image.src = "/fog/fog-texture.png";
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
 
-    if (!canvas) {
+    if (!canvas || !fogTexture) {
       return;
     }
 
@@ -452,36 +460,33 @@ function MapFogOverlay({
       return;
     }
 
+    let animationFrame = 0;
+    let lastPaint = 0;
+
+    const paint = (time: number) => {
+      if (time - lastPaint < 120) {
+        animationFrame = window.requestAnimationFrame(paint);
+        return;
+      }
+
+      lastPaint = time;
+      drawFogCanvas(
+        context,
+        fogTexture,
+        width,
+        height,
+        revealTiles,
+        boundaryEdges,
+        time
+      );
+      animationFrame = window.requestAnimationFrame(paint);
+    };
+
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
-    context.fillStyle = "rgba(3, 4, 5, 0.9)";
-    context.fillRect(0, 0, width, height);
+    animationFrame = window.requestAnimationFrame(paint);
 
-    drawCloudTexture(context, width, height);
-
-    context.globalCompositeOperation = "destination-out";
-
-    revealTiles.forEach((tile) => {
-      context.fillStyle = `rgba(0, 0, 0, ${tile.clear})`;
-      context.beginPath();
-      tile.points.forEach((point, index) => {
-        if (index === 0) {
-          context.moveTo(point.x, point.y);
-          return;
-        }
-
-        context.lineTo(point.x, point.y);
-      });
-      context.closePath();
-      context.fill();
-    });
-
-    context.globalCompositeOperation = "source-over";
-    context.fillStyle = "rgba(255, 255, 255, 0.025)";
-    context.fillRect(0, 0, width, height);
-
-    drawDiscoveryBoundary(context, boundaryEdges);
-  }, [boundaryEdges, revealTiles]);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [boundaryEdges, fogTexture, revealTiles]);
 
   return (
     <canvas
@@ -492,21 +497,76 @@ function MapFogOverlay({
   );
 }
 
-function drawCloudTexture(
+function drawFogCanvas(
   context: CanvasRenderingContext2D,
+  fogTexture: HTMLImageElement,
   width: number,
-  height: number
+  height: number,
+  revealTiles: FogRevealTile[],
+  boundaryEdges: FogBoundaryEdge[],
+  time: number
 ) {
-  context.save();
-  context.globalCompositeOperation = "screen";
+  context.clearRect(0, 0, width, height);
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = "source-over";
+  context.fillStyle = "rgba(2, 3, 4, 0.92)";
+  context.fillRect(0, 0, width, height);
 
-  for (let index = 0; index < 180; index += 1) {
-    drawFogWisp(context, width, height, index);
-  }
+  drawTiledFogTexture(context, fogTexture, width, height, time, 0.68, 0.72);
+  drawTiledFogTexture(context, fogTexture, width, height, time * 0.62 + 9000, 0.42, 1.08);
 
   context.globalCompositeOperation = "source-over";
-  context.fillStyle = "rgba(0, 0, 0, 0.28)";
+  context.globalAlpha = 1;
+  context.fillStyle = "rgba(0, 0, 0, 0.22)";
   context.fillRect(0, 0, width, height);
+
+  context.globalCompositeOperation = "destination-out";
+
+  revealTiles.forEach((tile) => {
+    context.fillStyle = `rgba(0, 0, 0, ${tile.clear})`;
+    context.beginPath();
+    tile.points.forEach((point, index) => {
+      if (index === 0) {
+        context.moveTo(point.x, point.y);
+        return;
+      }
+
+      context.lineTo(point.x, point.y);
+    });
+    context.closePath();
+    context.fill();
+  });
+
+  context.globalCompositeOperation = "source-over";
+  context.globalAlpha = 1;
+  context.fillStyle = "rgba(255, 255, 255, 0.018)";
+  context.fillRect(0, 0, width, height);
+
+  drawDiscoveryBoundary(context, boundaryEdges);
+}
+
+function drawTiledFogTexture(
+  context: CanvasRenderingContext2D,
+  fogTexture: HTMLImageElement,
+  width: number,
+  height: number,
+  time: number,
+  alpha: number,
+  scale: number
+) {
+  const tileSize = 620 * scale;
+  const offsetX = -tileSize + ((time * 0.006) % tileSize);
+  const offsetY = -tileSize + ((time * 0.0035) % tileSize);
+
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = alpha;
+
+  for (let x = offsetX; x < width + tileSize; x += tileSize) {
+    for (let y = offsetY; y < height + tileSize; y += tileSize) {
+      context.drawImage(fogTexture, x, y, tileSize, tileSize);
+    }
+  }
 
   context.restore();
 }
@@ -539,49 +599,4 @@ function drawDiscoveryBoundary(
   context.lineWidth = 2;
   context.stroke();
   context.restore();
-}
-
-function drawFogWisp(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  index: number
-) {
-  const startX = seededNoise(index, 13.17) * width;
-  const startY = seededNoise(index, 91.73) * height;
-  const length = 90 + seededNoise(index, 31.41) * 220;
-  const angle = seededNoise(index, 19.91) * Math.PI * 2;
-  const steps = 8 + Math.floor(seededNoise(index, 71.3) * 8);
-  const baseOpacity = 0.025 + seededNoise(index, 7.61) * 0.045;
-
-  for (let step = 0; step < steps; step += 1) {
-    const progress = step / Math.max(1, steps - 1);
-    const wave = Math.sin(progress * Math.PI * 2 + seededNoise(index, 44.2) * 6);
-    const x =
-      startX +
-      Math.cos(angle) * length * (progress - 0.5) +
-      Math.cos(angle + Math.PI / 2) * wave * 42;
-    const y =
-      startY +
-      Math.sin(angle) * length * (progress - 0.5) +
-      Math.sin(angle + Math.PI / 2) * wave * 42;
-    const radius = 34 + seededNoise(index * 17 + step, 41.29) * 82;
-    const opacity = baseOpacity * (0.45 + Math.sin(progress * Math.PI) * 0.75);
-    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-
-    gradient.addColorStop(0, `rgba(230, 235, 232, ${opacity})`);
-    gradient.addColorStop(0.52, `rgba(185, 192, 190, ${opacity * 0.45})`);
-    gradient.addColorStop(1, "rgba(90, 98, 98, 0)");
-
-    context.fillStyle = gradient;
-    context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
-    context.fill();
-  }
-}
-
-function seededNoise(index: number, seed: number) {
-  const value = Math.sin(index * 127.1 + seed * 311.7) * 43758.5453123;
-
-  return value - Math.floor(value);
 }
