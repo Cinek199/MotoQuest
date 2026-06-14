@@ -243,9 +243,56 @@ function BottomNavigation({
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
 }) {
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [isLandscapeNavOpen, setIsLandscapeNavOpen] = useState(true);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(orientation: landscape)");
+
+    const syncOrientation = () => {
+      setIsLandscape(mediaQuery.matches);
+      setIsLandscapeNavOpen(!mediaQuery.matches);
+    };
+
+    syncOrientation();
+    mediaQuery.addEventListener("change", syncOrientation);
+
+    return () => mediaQuery.removeEventListener("change", syncOrientation);
+  }, []);
+
+  const handleTabChange = (tabId: TabId) => {
+    onTabChange(tabId);
+
+    if (isLandscape) {
+      setIsLandscapeNavOpen(false);
+    }
+  };
+
   return (
-    <nav className="mq-bottom-nav fixed inset-x-0 bottom-0 z-50">
-      <div className="mq-bottom-nav-inner">
+    <>
+      <button
+        type="button"
+        aria-label="Pokaz menu"
+        onClick={() => setIsLandscapeNavOpen(true)}
+        className={[
+          "mq-landscape-menu-toggle fixed z-50",
+          isLandscape && isLandscapeNavOpen ? "is-hidden" : "",
+        ].join(" ")}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
+      <nav
+        className={[
+          "mq-bottom-nav fixed inset-x-0 bottom-0 z-50",
+          isLandscape ? "is-landscape" : "",
+          isLandscape && !isLandscapeNavOpen ? "is-landscape-closed" : "",
+          isLandscape && isLandscapeNavOpen ? "is-landscape-open" : "",
+        ].join(" ")}
+      >
+        <div className="mq-bottom-nav-inner">
         <div className="mq-bottom-nav-grid grid grid-cols-5">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
@@ -254,7 +301,7 @@ function BottomNavigation({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 aria-current={selected ? "page" : undefined}
                 className={[
                   "mq-bottom-nav-item group",
@@ -268,9 +315,31 @@ function BottomNavigation({
               </button>
             );
           })}
+
+          <button
+            type="button"
+            aria-label="Schowaj menu"
+            onClick={() => setIsLandscapeNavOpen(false)}
+            className="mq-bottom-nav-item mq-bottom-nav-collapse"
+          >
+            <span className="mq-bottom-nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </span>
+            <span className="mq-bottom-nav-label">Schowaj</span>
+          </button>
         </div>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }
 

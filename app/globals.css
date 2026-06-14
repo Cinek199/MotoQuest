@@ -229,6 +229,44 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+.mq-bottom-nav-collapse,
+.mq-landscape-menu-toggle {
+  display: none;
+}
+
+.mq-landscape-menu-toggle {
+  left: max(0.65rem, env(safe-area-inset-left));
+  bottom: calc(0.55rem + env(safe-area-inset-bottom));
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.82);
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.55),
+    0 0 24px rgba(255, 107, 0, 0.08);
+  color: #ff6b00;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.mq-landscape-menu-toggle span {
+  display: block;
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px rgba(255, 107, 0, 0.35);
+}
+
+.mq-landscape-menu-toggle:active {
+  transform: scale(0.94);
+}
+
 .mq-map-active {
   position: fixed;
   inset: 0;
@@ -404,6 +442,11 @@ textarea::placeholder {
     bottom: 0;
     height: calc(54px + env(safe-area-inset-bottom));
     padding: 0;
+    transition:
+      opacity 180ms ease,
+      transform 220ms ease,
+      visibility 180ms ease;
+    will-change: transform, opacity;
   }
 
   .mq-bottom-nav-inner {
@@ -413,6 +456,29 @@ textarea::placeholder {
 
   .mq-bottom-nav-grid {
     padding: 0.14rem max(0.5rem, env(safe-area-inset-right)) calc(0.18rem + env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .mq-bottom-nav.is-landscape-open .mq-bottom-nav-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .mq-bottom-nav.is-landscape-closed {
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+  }
+
+  .mq-bottom-nav-collapse {
+    display: flex;
+  }
+
+  .mq-landscape-menu-toggle {
+    display: grid;
+  }
+
+  .mq-landscape-menu-toggle.is-hidden {
+    display: none;
   }
 
   .mq-bottom-nav-item {
