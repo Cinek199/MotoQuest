@@ -22,6 +22,7 @@ import { signInAnonymously } from "../lib/auth";
 import { loadPlayer } from "../lib/loadPlayer";
 import { getUnreadNotificationsCount } from "../lib/notifications";
 import { usePlayerStats } from "../lib/usePlayerStats";
+import { useScreenWakeLock } from "../lib/useScreenWakeLock";
 
 type TabId =
   | "map"
@@ -65,6 +66,8 @@ export default function Home() {
   const [loadingStatus, setLoadingStatus] = useState("Uruchamianie...");
   const [progress, setProgress] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  useScreenWakeLock(!showSplash);
 
   useEffect(() => {
     async function init() {
