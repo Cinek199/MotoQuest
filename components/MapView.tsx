@@ -29,6 +29,8 @@ type FogBoundaryEdge = {
   to: ScreenPoint;
 };
 
+type FogTextureOffset = ScreenPoint;
+
 export default function MapView({
   hasUnreadNotifications,
   onOpenNotifications,
@@ -42,6 +44,10 @@ export default function MapView({
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [fogBoundaryEdges, setFogBoundaryEdges] = useState<FogBoundaryEdge[]>([]);
   const [fogRevealTiles, setFogRevealTiles] = useState<FogRevealTile[]>([]);
+  const [fogTextureOffset, setFogTextureOffset] = useState<FogTextureOffset>({
+    x: 0,
+    y: 0,
+  });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
@@ -52,7 +58,8 @@ export default function MapView({
       map,
       discoveredTileIdsRef.current,
       setFogRevealTiles,
-      setFogBoundaryEdges
+      setFogBoundaryEdges,
+      setFogTextureOffset
     );
 
     if (map.getSource(sourceId)) {
@@ -114,7 +121,8 @@ export default function MapView({
         nextMap,
         discoveredTileIdsRef.current,
         setFogRevealTiles,
-        setFogBoundaryEdges
+        setFogBoundaryEdges,
+        setFogTextureOffset
       );
       setMap(nextMap);
     });
@@ -142,6 +150,8 @@ export default function MapView({
       return;
     }
 
+    let fogSyncFrame = 0;
+
     const disableFollowMode = (event: maplibregl.MapLibreEvent) => {
       if (suppressMapInteractionRef.current) {
         return;
@@ -154,28 +164,48 @@ export default function MapView({
       setIsFollowingUser(false);
     };
     const syncFog = () => {
-      updateFogOverlay(
-        map,
-        discoveredTileIdsRef.current,
-        setFogRevealTiles,
-        setFogBoundaryEdges
-      );
+      if (fogSyncFrame) {
+        return;
+      }
+
+      fogSyncFrame = window.requestAnimationFrame(() => {
+        fogSyncFrame = 0;
+        updateFogOverlay(
+          map,
+          discoveredTileIdsRef.current,
+          setFogRevealTiles,
+          setFogBoundaryEdges,
+          setFogTextureOffset
+        );
+      });
     };
 
     map.on("dragstart", disableFollowMode);
+    map.on("move", syncFog);
     map.on("moveend", syncFog);
     map.on("zoomstart", disableFollowMode);
+    map.on("zoom", syncFog);
     map.on("zoomend", syncFog);
     map.on("rotatestart", disableFollowMode);
+    map.on("rotate", syncFog);
     map.on("pitchstart", disableFollowMode);
+    map.on("pitch", syncFog);
 
     return () => {
+      if (fogSyncFrame) {
+        window.cancelAnimationFrame(fogSyncFrame);
+      }
+
       map.off("dragstart", disableFollowMode);
+      map.off("move", syncFog);
       map.off("moveend", syncFog);
       map.off("zoomstart", disableFollowMode);
+      map.off("zoom", syncFog);
       map.off("zoomend", syncFog);
       map.off("rotatestart", disableFollowMode);
+      map.off("rotate", syncFog);
       map.off("pitchstart", disableFollowMode);
+      map.off("pitch", syncFog);
     };
   }, [map]);
 
@@ -234,7 +264,11 @@ export default function MapView({
         className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
       />
 
-      <MapFogOverlay boundaryEdges={fogBoundaryEdges} revealTiles={fogRevealTiles} />
+      <MapFogOverlay
+        boundaryEdges={fogBoundaryEdges}
+        revealTiles={fogRevealTiles}
+        textureOffset={fogTextureOffset}
+      />
 
       <MapHud
         activeTrip={activeTrip}
@@ -278,7 +312,8 @@ function updateFogOverlay(
   map: maplibregl.Map,
   discoveredTileIds: Set<string>,
   setFogRevealTiles: (tiles: FogRevealTile[]) => void,
-  setFogBoundaryEdges: (edges: FogBoundaryEdge[]) => void
+  setFogBoundaryEdges: (edges: FogBoundaryEdge[]) => void,
+  setFogTextureOffset: (offset: FogTextureOffset) => void
 ) {
   const bounds = map.getBounds();
   const width = map.getContainer().clientWidth;
@@ -296,6 +331,12 @@ function updateFogOverlay(
   const discoveredCoords = [...discoveredTileIds].map((tileId) =>
     tileId.split("_").map(Number)
   );
+  const worldAnchor = map.project([0, 0]);
+
+  setFogTextureOffset({
+    x: worldAnchor.x,
+    y: worldAnchor.y,
+  });
 
   discoveredCoords.forEach(([tileX, tileY]) => {
     for (let xOffset = -2; xOffset <= 2; xOffset += 1) {
@@ -425,9 +466,11 @@ function updateFogOverlay(
 function MapFogOverlay({
   boundaryEdges,
   revealTiles,
+  textureOffset,
 }: {
   boundaryEdges: FogBoundaryEdge[];
   revealTiles: FogRevealTile[];
+  textureOffset: FogTextureOffset;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [fogTexture, setFogTexture] = useState<HTMLImageElement | null>(null);
@@ -477,6 +520,7 @@ function MapFogOverlay({
         height,
         revealTiles,
         boundaryEdges,
+        textureOffset,
         time
       );
       animationFrame = window.requestAnimationFrame(paint);
@@ -486,7 +530,7 @@ function MapFogOverlay({
     animationFrame = window.requestAnimationFrame(paint);
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [boundaryEdges, fogTexture, revealTiles]);
+  }, [boundaryEdges, fogTexture, revealTiles, textureOffset]);
 
   return (
     <canvas
@@ -504,6 +548,7 @@ function drawFogCanvas(
   height: number,
   revealTiles: FogRevealTile[],
   boundaryEdges: FogBoundaryEdge[],
+  textureOffset: FogTextureOffset,
   time: number
 ) {
   context.clearRect(0, 0, width, height);
@@ -512,8 +557,17 @@ function drawFogCanvas(
   context.fillStyle = "rgba(2, 3, 4, 0.92)";
   context.fillRect(0, 0, width, height);
 
-  drawTiledFogTexture(context, fogTexture, width, height, time, 0.68, 0.72);
-  drawTiledFogTexture(context, fogTexture, width, height, time * 0.62 + 9000, 0.42, 1.08);
+  drawTiledFogTexture(context, fogTexture, width, height, textureOffset, time, 0.68, 0.72);
+  drawTiledFogTexture(
+    context,
+    fogTexture,
+    width,
+    height,
+    textureOffset,
+    time * 0.62 + 9000,
+    0.42,
+    1.08
+  );
 
   context.globalCompositeOperation = "source-over";
   context.globalAlpha = 1;
@@ -550,13 +604,14 @@ function drawTiledFogTexture(
   fogTexture: HTMLImageElement,
   width: number,
   height: number,
+  textureOffset: FogTextureOffset,
   time: number,
   alpha: number,
   scale: number
 ) {
   const tileSize = 620 * scale;
-  const offsetX = -tileSize + ((time * 0.006) % tileSize);
-  const offsetY = -tileSize + ((time * 0.0035) % tileSize);
+  const offsetX = -tileSize + positiveModulo(textureOffset.x + time * 0.006, tileSize);
+  const offsetY = -tileSize + positiveModulo(textureOffset.y + time * 0.0035, tileSize);
 
   context.save();
   context.globalCompositeOperation = "screen";
@@ -569,6 +624,10 @@ function drawTiledFogTexture(
   }
 
   context.restore();
+}
+
+function positiveModulo(value: number, divisor: number) {
+  return ((value % divisor) + divisor) % divisor;
 }
 
 function drawDiscoveryBoundary(
