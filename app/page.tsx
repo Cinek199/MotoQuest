@@ -241,10 +241,9 @@ function BottomNavigation({
   onTabChange: (tab: TabId) => void;
 }) {
   return (
-    <nav className="mq-bottom-nav fixed inset-x-0 bottom-0 z-50 px-3 pb-3">
-      <div className="mq-bottom-nav-inner mx-auto overflow-hidden rounded-[1.65rem] border border-white/10 bg-black/92 shadow-2xl shadow-black/90 backdrop-blur-2xl">
-        <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
-        <div className="mq-bottom-nav-grid grid grid-cols-5 gap-0 px-2 py-2">
+    <nav className="mq-bottom-nav fixed inset-x-0 bottom-0 z-50">
+      <div className="mq-bottom-nav-inner">
+        <div className="mq-bottom-nav-grid grid grid-cols-5">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
 
@@ -255,25 +254,14 @@ function BottomNavigation({
                 onClick={() => onTabChange(tab.id)}
                 aria-current={selected ? "page" : undefined}
                 className={[
-                  "mq-bottom-nav-item group relative flex min-h-[54px] flex-col items-center justify-center gap-1 border text-[10px] font-black transition active:scale-95",
-                  selected
-                    ? "border-transparent bg-transparent text-orange-500"
-                    : "border-transparent bg-transparent text-zinc-500 hover:text-white",
+                  "mq-bottom-nav-item group",
+                  selected ? "is-active" : "",
                 ].join(" ")}
               >
-                <span
-                  className={[
-                    "flex h-6 w-6 items-center justify-center transition",
-                    selected
-                      ? "text-orange-500"
-                      : "text-zinc-400 group-hover:text-orange-400",
-                  ].join(" ")}
-                >
+                <span className="mq-bottom-nav-icon">
                   <NavIcon id={tab.id} />
                 </span>
-                <span className="max-w-full truncate px-1 leading-none">
-                  {tab.label}
-                </span>
+                <span className="mq-bottom-nav-label">{tab.label}</span>
               </button>
             );
           })}
