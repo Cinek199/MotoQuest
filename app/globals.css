@@ -137,7 +137,10 @@ textarea::placeholder {
 }
 
 .mq-map-active .mq-phone-frame {
+  position: fixed;
+  inset: 0;
   max-width: 100vw;
+  width: 100vw;
   height: var(--mq-vh);
   min-height: var(--mq-vh);
   overflow: hidden;
@@ -145,6 +148,9 @@ textarea::placeholder {
 }
 
 .mq-map-active .mq-map-shell {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
   height: var(--mq-vh);
   min-height: 0;
   border-left: 0;
@@ -153,6 +159,9 @@ textarea::placeholder {
 }
 
 .mq-map-active .mq-map-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: var(--mq-vh);
   min-height: 0;
 }
