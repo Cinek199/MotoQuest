@@ -212,6 +212,56 @@ export default function MapView({
     };
   }, [map]);
 
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
+    let resizeFrame = 0;
+    const resizeTimeouts: number[] = [];
+
+    const resizeMap = () => {
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+
+      resizeFrame = window.requestAnimationFrame(() => {
+        resizeFrame = 0;
+        map.resize();
+        updateFogOverlay(
+          map,
+          discoveredTileIdsRef.current,
+          setFogRevealTiles,
+          setFogBoundaryEdges,
+          setFogTextureOffset
+        );
+      });
+    };
+
+    const scheduleResize = () => {
+      resizeMap();
+      resizeTimeouts.push(window.setTimeout(resizeMap, 120));
+      resizeTimeouts.push(window.setTimeout(resizeMap, 320));
+    };
+
+    window.addEventListener("resize", scheduleResize);
+    window.addEventListener("orientationchange", scheduleResize);
+    window.visualViewport?.addEventListener("resize", scheduleResize);
+
+    scheduleResize();
+
+    return () => {
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+
+      resizeTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      window.removeEventListener("resize", scheduleResize);
+      window.removeEventListener("orientationchange", scheduleResize);
+      window.visualViewport?.removeEventListener("resize", scheduleResize);
+    };
+  }, [map]);
+
   const centerOnUser = () => {
     if (!map || !currentPosition) {
       return;
