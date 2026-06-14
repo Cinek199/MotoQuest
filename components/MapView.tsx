@@ -13,6 +13,9 @@ import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+const FOG_DRIFT_X = 0.0018;
+const FOG_DRIFT_Y = 0.0011;
+const FOG_MAP_PARALLAX = 0.28;
 
 type ScreenPoint = {
   x: number;
@@ -564,7 +567,7 @@ function drawFogCanvas(
     width,
     height,
     textureOffset,
-    time * 0.62 + 9000,
+    time * 0.36 + 9000,
     0.42,
     1.08
   );
@@ -610,8 +613,12 @@ function drawTiledFogTexture(
   scale: number
 ) {
   const tileSize = 620 * scale;
-  const offsetX = -tileSize + positiveModulo(textureOffset.x + time * 0.006, tileSize);
-  const offsetY = -tileSize + positiveModulo(textureOffset.y + time * 0.0035, tileSize);
+  const offsetX =
+    -tileSize +
+    positiveModulo(textureOffset.x * FOG_MAP_PARALLAX + time * FOG_DRIFT_X, tileSize);
+  const offsetY =
+    -tileSize +
+    positiveModulo(textureOffset.y * FOG_MAP_PARALLAX + time * FOG_DRIFT_Y, tileSize);
 
   context.save();
   context.globalCompositeOperation = "screen";
