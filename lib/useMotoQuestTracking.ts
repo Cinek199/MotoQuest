@@ -38,6 +38,7 @@ export function useMotoQuestTracking({
   shouldFollowUser,
 }: UseMotoQuestTrackingParams) {
   const markerRef = useRef<maplibregl.Marker | null>(null);
+  const markerHeadingRef = useRef(0);
   const userIdRef = useRef("");
   const lastPositionRef = useRef<Position | null>(null);
   const shouldFollowUserRef = useRef(shouldFollowUser);
@@ -112,6 +113,7 @@ export function useMotoQuestTracking({
     const nextPosition = { lat, lon };
 
     setCurrentPosition(nextPosition);
+    updateMarkerHeading(nextPosition, position.coords);
 
     appendActiveTripPoint({
       accuracy: position.coords.accuracy ?? null,
@@ -202,7 +204,8 @@ export function useMotoQuestTracking({
 
     if (!markerRef.current) {
       markerRef.current = new maplibregl.Marker({
-        element: createUserPositionMarker(),
+        anchor: "center",
+        element: createUserPositionMarker(markerHeadingRef.current),
       })
         .setLngLat([position.lon, position.lat])
         .addTo(map);
@@ -211,6 +214,52 @@ export function useMotoQuestTracking({
     }
 
     markerRef.current.setLngLat([position.lon, position.lat]);
+    applyUserMarkerHeading(
+      markerRef.current.getElement(),
+      markerHeadingRef.current
+    );
+  }
+
+  function updateMarkerHeading(
+    position: Position,
+    coords: GeolocationCoordinates
+  ) {
+    const gpsHeading =
+      typeof coords.heading === "number" && Number.isFinite(coords.heading)
+        ? coords.heading
+        : null;
+    const gpsSpeed =
+      typeof coords.speed === "number" && Number.isFinite(coords.speed)
+        ? coords.speed
+        : 0;
+
+    if (gpsHeading !== null && gpsSpeed > 0.5) {
+      markerHeadingRef.current = smoothHeading(
+        markerHeadingRef.current,
+        gpsHeading
+      );
+      return;
+    }
+
+    if (!lastPositionRef.current) {
+      return;
+    }
+
+    const distanceKm = calculateDistanceKm(
+      lastPositionRef.current.lat,
+      lastPositionRef.current.lon,
+      position.lat,
+      position.lon
+    );
+
+    if (distanceKm < 0.005 || distanceKm >= 2) {
+      return;
+    }
+
+    markerHeadingRef.current = smoothHeading(
+      markerHeadingRef.current,
+      calculateBearing(lastPositionRef.current, position)
+    );
   }
 
   function discoverTile(lat: number, lon: number, map: maplibregl.Map) {
@@ -264,55 +313,98 @@ function unlockDistanceAchievements(distanceKm: number) {
   }
 }
 
-function createUserPositionMarker() {
+function createUserPositionMarker(heading: number) {
   const marker = document.createElement("div");
   marker.setAttribute("aria-label", "Aktualna pozycja");
+  marker.style.setProperty("--mq-user-marker-heading", `${heading}deg`);
   Object.assign(marker.style, {
-    height: "40px",
+    height: "36px",
     pointerEvents: "none",
     position: "relative",
-    width: "40px",
+    width: "36px",
   });
 
-  const trail = document.createElement("div");
-  Object.assign(trail.style, {
-    background: "rgba(249, 115, 22, 0.5)",
+  const glow = document.createElement("div");
+  Object.assign(glow.style, {
+    background:
+      "radial-gradient(circle, rgba(255, 107, 0, 0.38) 0%, rgba(255, 107, 0, 0.18) 38%, rgba(255, 107, 0, 0) 72%)",
     borderRadius: "999px",
-    bottom: "6px",
-    boxShadow: "0 0 18px rgba(249, 115, 22, 0.75)",
-    height: "10px",
-    left: "17px",
+    height: "36px",
+    inset: "0",
     position: "absolute",
-    transform: "rotate(45deg)",
-    width: "22px",
+    width: "36px",
+  });
+
+  const rotator = document.createElement("div");
+  Object.assign(rotator.style, {
+    height: "36px",
+    inset: "0",
+    position: "absolute",
+    transform: "rotate(var(--mq-user-marker-heading, 0deg))",
+    transformOrigin: "50% 50%",
+    transition: "transform 260ms ease-out",
+    width: "36px",
+    willChange: "transform",
+  });
+
+  const shadow = document.createElement("div");
+  Object.assign(shadow.style, {
+    background: "rgba(0, 0, 0, 0.68)",
+    clipPath: "polygon(50% 0%, 88% 100%, 50% 78%, 12% 100%)",
+    filter: "blur(0.2px)",
+    height: "29px",
+    left: "9px",
+    position: "absolute",
+    top: "5px",
+    transform: "translate(2px, 2px)",
+    width: "18px",
   });
 
   const arrow = document.createElement("div");
   Object.assign(arrow.style, {
-    background: "linear-gradient(180deg, #ff8a1f 0%, #ff5a00 100%)",
-    clipPath: "polygon(50% 0%, 96% 100%, 50% 78%, 4% 100%)",
-    filter: "drop-shadow(0 0 8px rgba(249, 115, 22, 0.95)) drop-shadow(0 2px 7px rgba(0, 0, 0, 0.9))",
-    height: "30px",
-    left: "11px",
+    background:
+      "linear-gradient(180deg, #ffb020 0%, #ff6b00 56%, #c84605 100%)",
+    clipPath: "polygon(50% 0%, 88% 100%, 50% 78%, 12% 100%)",
+    filter:
+      "drop-shadow(0 0 8px rgba(255, 107, 0, 0.85)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95))",
+    height: "29px",
+    left: "9px",
     position: "absolute",
     top: "4px",
-    transform: "rotate(45deg)",
-    width: "21px",
+    width: "18px",
   });
 
-  const core = document.createElement("div");
-  Object.assign(core.style, {
-    background: "#0b0b0d",
-    border: "1px solid rgba(255, 255, 255, 0.82)",
-    borderRadius: "999px",
-    height: "6px",
-    left: "18px",
-    position: "absolute",
-    top: "16px",
-    width: "6px",
-  });
-
-  marker.append(trail, arrow, core);
+  rotator.append(shadow, arrow);
+  marker.append(glow, rotator);
 
   return marker;
+}
+
+function applyUserMarkerHeading(marker: HTMLElement, heading: number) {
+  marker.style.setProperty("--mq-user-marker-heading", `${heading}deg`);
+}
+
+function calculateBearing(from: Position, to: Position) {
+  const lat1 = degreesToRadians(from.lat);
+  const lat2 = degreesToRadians(to.lat);
+  const deltaLon = degreesToRadians(to.lon - from.lon);
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+
+  return (radiansToDegrees(Math.atan2(y, x)) + 360) % 360;
+}
+
+function degreesToRadians(degrees: number) {
+  return (degrees * Math.PI) / 180;
+}
+
+function radiansToDegrees(radians: number) {
+  return (radians * 180) / Math.PI;
+}
+
+function smoothHeading(previous: number, next: number) {
+  const delta = ((((next - previous) % 360) + 540) % 360) - 180;
+  return (previous + delta * 0.4 + 360) % 360;
 }
