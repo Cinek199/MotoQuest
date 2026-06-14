@@ -32,6 +32,14 @@ type UseMotoQuestTrackingParams = {
   shouldFollowUser: boolean;
 };
 
+type CompassOrientationEvent = DeviceOrientationEvent & {
+  webkitCompassHeading?: number;
+};
+
+type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<PermissionState>;
+};
+
 export function useMotoQuestTracking({
   addTileLayer,
   map,
@@ -39,6 +47,7 @@ export function useMotoQuestTracking({
 }: UseMotoQuestTrackingParams) {
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const markerHeadingRef = useRef(0);
+  const compassFrameRef = useRef<number | null>(null);
   const userIdRef = useRef("");
   const lastPositionRef = useRef<Position | null>(null);
   const shouldFollowUserRef = useRef(shouldFollowUser);
@@ -85,6 +94,8 @@ export function useMotoQuestTracking({
     setTilesCount(discoveredTilesRef.current.size);
     setDistanceKm(getNumber(STORAGE_KEYS.distance));
 
+    const cleanupCompass = setupCompassHeading(map);
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         void handlePosition(position, map);
@@ -101,6 +112,7 @@ export function useMotoQuestTracking({
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
+      cleanupCompass();
     };
   }, [addTileLayer, map]);
 
@@ -205,7 +217,7 @@ export function useMotoQuestTracking({
     if (!markerRef.current) {
       markerRef.current = new maplibregl.Marker({
         anchor: "center",
-        element: createUserPositionMarker(markerHeadingRef.current),
+        element: createUserPositionMarker(getDisplayHeading(map)),
       })
         .setLngLat([position.lon, position.lat])
         .addTo(map);
@@ -214,10 +226,95 @@ export function useMotoQuestTracking({
     }
 
     markerRef.current.setLngLat([position.lon, position.lat]);
-    applyUserMarkerHeading(
-      markerRef.current.getElement(),
-      markerHeadingRef.current
-    );
+    applyUserMarkerHeading(markerRef.current.getElement(), getDisplayHeading(map));
+  }
+
+  function setupCompassHeading(map: maplibregl.Map) {
+    if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
+      return () => {};
+    }
+
+    let listenerAdded = false;
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const heading = getCompassHeading(event as CompassOrientationEvent);
+
+      if (heading === null) {
+        return;
+      }
+
+      markerHeadingRef.current = smoothHeading(markerHeadingRef.current, heading);
+
+      if (compassFrameRef.current !== null) {
+        return;
+      }
+
+      compassFrameRef.current = window.requestAnimationFrame(() => {
+        compassFrameRef.current = null;
+
+        if (!markerRef.current) {
+          return;
+        }
+
+        applyUserMarkerHeading(
+          markerRef.current.getElement(),
+          getDisplayHeading(map)
+        );
+      });
+    };
+
+    const addListener = () => {
+      if (listenerAdded) {
+        return;
+      }
+
+      listenerAdded = true;
+      window.addEventListener("deviceorientation", handleOrientation, true);
+    };
+
+    const requestPermission = () => {
+      const orientationEvent =
+        DeviceOrientationEvent as DeviceOrientationEventWithPermission;
+
+      if (typeof orientationEvent.requestPermission !== "function") {
+        addListener();
+        return;
+      }
+
+      void orientationEvent
+        .requestPermission()
+        .then((state) => {
+          if (state === "granted") {
+            addListener();
+          }
+        })
+        .catch(() => {});
+    };
+
+    const orientationEvent =
+      DeviceOrientationEvent as DeviceOrientationEventWithPermission;
+
+    if (typeof orientationEvent.requestPermission === "function") {
+      window.addEventListener("pointerdown", requestPermission, { once: true });
+      window.addEventListener("touchend", requestPermission, { once: true });
+    } else {
+      addListener();
+    }
+
+    return () => {
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+      window.removeEventListener("pointerdown", requestPermission);
+      window.removeEventListener("touchend", requestPermission);
+
+      if (compassFrameRef.current !== null) {
+        window.cancelAnimationFrame(compassFrameRef.current);
+        compassFrameRef.current = null;
+      }
+    };
+  }
+
+  function getDisplayHeading(map: maplibregl.Map) {
+    return normalizeHeading(markerHeadingRef.current - map.getBearing());
   }
 
   function updateMarkerHeading(
@@ -318,63 +415,75 @@ function createUserPositionMarker(heading: number) {
   marker.setAttribute("aria-label", "Aktualna pozycja");
   marker.style.setProperty("--mq-user-marker-heading", `${heading}deg`);
   Object.assign(marker.style, {
-    height: "36px",
+    height: "40px",
     pointerEvents: "none",
     position: "relative",
-    width: "36px",
+    width: "40px",
   });
 
   const glow = document.createElement("div");
   Object.assign(glow.style, {
     background:
-      "radial-gradient(circle, rgba(255, 107, 0, 0.38) 0%, rgba(255, 107, 0, 0.18) 38%, rgba(255, 107, 0, 0) 72%)",
+      "radial-gradient(circle, rgba(255, 107, 0, 0.34) 0%, rgba(255, 107, 0, 0.14) 42%, rgba(255, 107, 0, 0) 74%)",
     borderRadius: "999px",
-    height: "36px",
+    height: "40px",
     inset: "0",
     position: "absolute",
-    width: "36px",
+    width: "40px",
   });
 
   const rotator = document.createElement("div");
   Object.assign(rotator.style, {
-    height: "36px",
+    height: "40px",
     inset: "0",
     position: "absolute",
     transform: "rotate(var(--mq-user-marker-heading, 0deg))",
     transformOrigin: "50% 50%",
     transition: "transform 260ms ease-out",
-    width: "36px",
+    width: "40px",
     willChange: "transform",
   });
 
   const shadow = document.createElement("div");
   Object.assign(shadow.style, {
-    background: "rgba(0, 0, 0, 0.68)",
-    clipPath: "polygon(50% 0%, 88% 100%, 50% 78%, 12% 100%)",
-    filter: "blur(0.2px)",
-    height: "29px",
-    left: "9px",
+    background: "rgba(0, 0, 0, 0.76)",
+    clipPath: "polygon(50% 0%, 96% 100%, 50% 78%, 4% 100%)",
+    filter: "blur(0.3px)",
+    height: "30px",
+    left: "10px",
     position: "absolute",
     top: "5px",
     transform: "translate(2px, 2px)",
-    width: "18px",
+    width: "21px",
   });
 
   const arrow = document.createElement("div");
   Object.assign(arrow.style, {
     background:
-      "linear-gradient(180deg, #ffb020 0%, #ff6b00 56%, #c84605 100%)",
-    clipPath: "polygon(50% 0%, 88% 100%, 50% 78%, 12% 100%)",
+      "linear-gradient(180deg, #ff8a1f 0%, #ff5a00 62%, #bd3f00 100%)",
+    clipPath: "polygon(50% 0%, 96% 100%, 50% 78%, 4% 100%)",
     filter:
-      "drop-shadow(0 0 8px rgba(255, 107, 0, 0.85)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.95))",
-    height: "29px",
-    left: "9px",
+      "drop-shadow(0 0 8px rgba(249, 115, 22, 0.95)) drop-shadow(0 2px 7px rgba(0, 0, 0, 0.9))",
+    height: "30px",
+    left: "10px",
     position: "absolute",
     top: "4px",
-    width: "18px",
+    width: "21px",
   });
 
-  rotator.append(shadow, arrow);
+  const core = document.createElement("div");
+  Object.assign(core.style, {
+    background: "#0b0b0d",
+    border: "1px solid rgba(255, 255, 255, 0.82)",
+    borderRadius: "999px",
+    height: "6px",
+    left: "17px",
+    position: "absolute",
+    top: "15px",
+    width: "6px",
+  });
+
+  rotator.append(shadow, arrow, core);
   marker.append(glow, rotator);
 
   return marker;
@@ -404,7 +513,31 @@ function radiansToDegrees(radians: number) {
   return (radians * 180) / Math.PI;
 }
 
+function getCompassHeading(event: CompassOrientationEvent) {
+  if (
+    typeof event.webkitCompassHeading === "number" &&
+    Number.isFinite(event.webkitCompassHeading)
+  ) {
+    return normalizeHeading(event.webkitCompassHeading);
+  }
+
+  if (typeof event.alpha !== "number" || !Number.isFinite(event.alpha)) {
+    return null;
+  }
+
+  const screenAngle =
+    typeof window !== "undefined" && window.screen?.orientation
+      ? window.screen.orientation.angle
+      : 0;
+
+  return normalizeHeading(360 - event.alpha + screenAngle);
+}
+
+function normalizeHeading(heading: number) {
+  return ((heading % 360) + 360) % 360;
+}
+
 function smoothHeading(previous: number, next: number) {
   const delta = ((((next - previous) % 360) + 540) % 360) - 180;
-  return (previous + delta * 0.4 + 360) % 360;
+  return normalizeHeading(previous + delta * 0.4);
 }
