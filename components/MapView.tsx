@@ -259,12 +259,12 @@ export default function MapView({
   };
 
   return (
-    <div className="relative min-h-[calc(100dvh-6rem)] overflow-hidden rounded-[2.15rem] border border-white/10 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-orange-500/10">
+    <div className="mq-map-shell relative overflow-hidden rounded-[2.15rem] border border-white/10 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-orange-500/10">
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.12),transparent_34%),linear-gradient(180deg,rgba(0,0,0,0.12),transparent_35%,rgba(0,0,0,0.34))]" />
 
       <div
         ref={mapContainer}
-        className="h-[calc(100dvh-6rem)] min-h-[690px] w-full"
+        className="mq-map-canvas w-full"
       />
 
       <MapFogOverlay

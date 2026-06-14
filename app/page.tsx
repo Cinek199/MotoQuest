@@ -123,10 +123,10 @@ export default function Home() {
   }
 
   return (
-    <main className="mq-app-shell min-h-screen pb-28 text-white">
+    <main className="mq-app-shell min-h-screen text-white">
       <DevRuntimeGuard />
 
-      <div className="mq-phone-frame relative z-10 mx-auto w-full max-w-[430px] px-3 py-3">
+      <div className="mq-phone-frame relative z-10 mx-auto w-full px-3 py-3">
         {activeTab === "map" && (
           <MapView
             hasUnreadNotifications={unreadNotifications > 0}
@@ -236,10 +236,10 @@ function BottomNavigation({
   onTabChange: (tab: TabId) => void;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3">
-      <div className="mx-auto max-w-[430px] overflow-hidden rounded-[1.65rem] border border-white/10 bg-black/92 shadow-2xl shadow-black/90 backdrop-blur-2xl">
+    <nav className="mq-bottom-nav fixed inset-x-0 bottom-0 z-50 px-3 pb-3">
+      <div className="mq-bottom-nav-inner mx-auto overflow-hidden rounded-[1.65rem] border border-white/10 bg-black/92 shadow-2xl shadow-black/90 backdrop-blur-2xl">
         <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
-        <div className="grid grid-cols-5 gap-0 px-2 py-2">
+        <div className="mq-bottom-nav-grid grid grid-cols-5 gap-0 px-2 py-2">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
 
@@ -250,7 +250,7 @@ function BottomNavigation({
                 onClick={() => onTabChange(tab.id)}
                 aria-current={selected ? "page" : undefined}
                 className={[
-                  "group relative flex min-h-[54px] flex-col items-center justify-center gap-1 border text-[10px] font-black transition active:scale-95",
+                  "mq-bottom-nav-item group relative flex min-h-[54px] flex-col items-center justify-center gap-1 border text-[10px] font-black transition active:scale-95",
                   selected
                     ? "border-transparent bg-transparent text-orange-500"
                     : "border-transparent bg-transparent text-zinc-500 hover:text-white",

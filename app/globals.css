@@ -86,6 +86,7 @@ textarea::placeholder {
 
 .mq-app-shell {
   position: relative;
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 50% -8rem, rgba(249, 115, 22, 0.16), transparent 32rem),
     linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72) 42rem),
@@ -93,7 +94,25 @@ textarea::placeholder {
 }
 
 .mq-phone-frame {
+  max-width: 430px;
   min-height: calc(100dvh - 1rem);
+}
+
+.mq-map-shell {
+  min-height: calc(100dvh - 7.25rem - env(safe-area-inset-bottom));
+}
+
+.mq-map-canvas {
+  height: calc(100dvh - 7.25rem - env(safe-area-inset-bottom));
+  min-height: 620px;
+}
+
+.mq-bottom-nav {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.mq-bottom-nav-inner {
+  max-width: 430px;
 }
 
 @media (min-width: 760px) {
@@ -106,6 +125,120 @@ textarea::placeholder {
     box-shadow:
       0 0 0 8px rgba(39, 39, 42, 0.55),
       0 36px 90px rgba(0, 0, 0, 0.72);
+  }
+}
+
+@media (max-width: 420px) {
+  .mq-phone-frame {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .mq-map-shell {
+    border-radius: 1.8rem;
+  }
+
+  .mq-bottom-nav {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .mq-app-shell {
+    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom));
+  }
+
+  .mq-phone-frame {
+    max-width: min(100vw, 820px);
+    min-height: auto;
+    padding: 0.35rem 0.55rem 0.45rem;
+  }
+
+  .mq-map-shell {
+    min-height: calc(100dvh - 5rem - env(safe-area-inset-bottom));
+    border-radius: 1.45rem;
+  }
+
+  .mq-map-canvas {
+    height: calc(100dvh - 5rem - env(safe-area-inset-bottom));
+    min-height: 300px;
+  }
+
+  .mq-screen {
+    max-width: min(100vw, 820px);
+    margin: 0 auto;
+  }
+
+  .mq-bottom-nav {
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+    padding-bottom: max(0.45rem, env(safe-area-inset-bottom));
+  }
+
+  .mq-bottom-nav-inner {
+    max-width: min(100vw - 1.2rem, 640px);
+    border-radius: 1.25rem;
+  }
+
+  .mq-bottom-nav-grid {
+    padding: 0.25rem 0.4rem;
+  }
+
+  .mq-bottom-nav-item {
+    min-height: 42px;
+    gap: 0.15rem;
+    font-size: 9px;
+  }
+
+  .mq-map-hud-top {
+    top: 0.45rem;
+    left: max(0.55rem, env(safe-area-inset-left));
+    right: max(0.55rem, env(safe-area-inset-right));
+  }
+
+  .mq-map-hud-top > div:first-child {
+    max-width: 360px;
+  }
+
+  .mq-map-hud-top > div:first-child > div:first-child,
+  .mq-map-hud-top > div:first-child > button {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.9rem;
+  }
+
+  .mq-map-hud-top > div:first-child .text-xl {
+    font-size: 1rem;
+  }
+
+  .mq-map-region-card {
+    max-width: 360px;
+    margin-top: 0.55rem;
+    border-radius: 1rem;
+  }
+
+  .mq-map-region-card > div {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .mq-map-controls {
+    top: 5.9rem;
+    right: max(0.65rem, env(safe-area-inset-right));
+    gap: 0.45rem;
+  }
+
+  .mq-map-controls button,
+  .mq-map-controls > div {
+    transform: scale(0.86);
+    transform-origin: right center;
+  }
+
+  .mq-recording-panel {
+    left: max(0.75rem, env(safe-area-inset-left));
+    right: auto;
+    bottom: 0.45rem;
+    width: min(430px, 58vw);
   }
 }
 

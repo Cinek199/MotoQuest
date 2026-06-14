@@ -63,7 +63,7 @@ export default function MapHud({
 
   return (
     <>
-      <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
+      <div className="mq-map-hud-top pointer-events-none absolute inset-x-3 top-3 z-20">
         <div className="flex items-center justify-between gap-3">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-orange-500/35 bg-black/82 text-sm font-black text-orange-500 shadow-2xl backdrop-blur-xl">
             {profile.avatarUrl ? (
@@ -110,7 +110,7 @@ export default function MapHud({
           </button>
         </div>
 
-        <section className="mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/70 shadow-2xl backdrop-blur-xl">
+        <section className="mq-map-region-card mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/70 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center gap-3 px-4 py-3">
             <VoivodeshipCrest name={currentVoivodeship} />
 
@@ -138,7 +138,7 @@ export default function MapHud({
         </section>
       </div>
 
-      <div className="pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
+      <div className="mq-map-controls pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
         <HudRoundButton active={gpsReady} label="GPS" sublabel={gpsReady ? "ON" : "..."} />
         <HudRoundButton
           ariaLabel="Wycentruj mape na aktualnej pozycji"
@@ -155,7 +155,7 @@ export default function MapHud({
       </div>
 
       {activeTrip && (
-        <div className="pointer-events-none absolute inset-x-5 bottom-3 z-20">
+        <div className="mq-recording-panel pointer-events-none absolute inset-x-5 bottom-3 z-20">
           <section className="overflow-hidden rounded-[1.35rem] border border-orange-500/25 bg-black/82 shadow-2xl shadow-black/80 backdrop-blur-xl">
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
               <div className="flex items-center gap-3">
