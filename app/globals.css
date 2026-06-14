@@ -170,6 +170,26 @@ textarea::placeholder {
   top: max(0.75rem, env(safe-area-inset-top));
 }
 
+@media (orientation: portrait) {
+  .mq-map-active,
+  .mq-map-active .mq-phone-frame,
+  .mq-map-active .mq-map-shell {
+    top: calc(-1 * env(safe-area-inset-top));
+    bottom: auto;
+    height: calc(var(--mq-vh) + env(safe-area-inset-top));
+    min-height: calc(var(--mq-vh) + env(safe-area-inset-top));
+  }
+
+  .mq-map-active .mq-map-canvas {
+    height: calc(var(--mq-vh) + env(safe-area-inset-top));
+    min-height: calc(var(--mq-vh) + env(safe-area-inset-top));
+  }
+
+  .mq-map-active .mq-map-hud-top {
+    top: calc(env(safe-area-inset-top) + env(safe-area-inset-top) + 0.75rem);
+  }
+}
+
 @media (min-width: 760px) {
   .mq-phone-frame {
     margin-top: 1rem;
