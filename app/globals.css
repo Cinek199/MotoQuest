@@ -325,16 +325,23 @@ textarea::placeholder {
 }
 
 .mq-map-region-card {
-  width: min(21rem, calc(100vw - 1.5rem));
+  width: min(16.75rem, calc(100vw - 1.5rem));
   max-width: 100%;
 }
 
 .mq-map-region-card-inner {
-  padding: 0.72rem 0.85rem;
+  padding: 0.48rem 0.62rem;
 }
 
 .mq-map-region-progress {
-  max-width: 11.5rem;
+  max-width: 8.8rem;
+}
+
+.mq-map-region-card [title^="Herb:"] {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.65rem;
+  padding: 0.15rem;
 }
 
 @media (orientation: portrait) {
@@ -553,19 +560,25 @@ textarea::placeholder {
   }
 
   .mq-map-region-card {
-    width: min(19rem, 42vw);
-    max-width: 320px;
-    margin-top: 0.55rem;
+    width: min(15.5rem, 35vw);
+    max-width: 260px;
+    margin-top: 0.42rem;
     margin-right: auto;
-    border-radius: 1rem;
+    border-radius: 0.95rem;
   }
 
   .mq-map-region-card-inner {
-    padding: 0.5rem 0.7rem;
+    padding: 0.4rem 0.55rem;
   }
 
   .mq-map-region-progress {
-    max-width: 9rem;
+    max-width: 7.2rem;
+  }
+
+  .mq-map-region-card [title^="Herb:"] {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 0.55rem;
   }
 
   .mq-map-controls {
