@@ -219,6 +219,11 @@ export default function MapView({
 
     let resizeFrame = 0;
     const resizeTimeouts: number[] = [];
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     const resizeMap = () => {
       if (resizeFrame) {
@@ -227,6 +232,14 @@ export default function MapView({
 
       resizeFrame = window.requestAnimationFrame(() => {
         resizeFrame = 0;
+        const viewportHeight =
+          window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
+
+        document.documentElement.style.setProperty(
+          "--mq-vh",
+          `${Math.round(viewportHeight)}px`
+        );
+        window.scrollTo(0, 0);
         map.resize();
         updateFogOverlay(
           map,
@@ -240,12 +253,19 @@ export default function MapView({
 
     const scheduleResize = () => {
       resizeMap();
-      resizeTimeouts.push(window.setTimeout(resizeMap, 120));
-      resizeTimeouts.push(window.setTimeout(resizeMap, 320));
+      [80, 160, 320, 520, 820, 1200].forEach((delay) => {
+        resizeTimeouts.push(window.setTimeout(resizeMap, delay));
+      });
     };
+    const resizeObserver = new ResizeObserver(scheduleResize);
+
+    if (mapContainer.current) {
+      resizeObserver.observe(mapContainer.current);
+    }
 
     window.addEventListener("resize", scheduleResize);
     window.addEventListener("orientationchange", scheduleResize);
+    window.visualViewport?.addEventListener("scroll", scheduleResize);
     window.visualViewport?.addEventListener("resize", scheduleResize);
 
     scheduleResize();
@@ -256,9 +276,13 @@ export default function MapView({
       }
 
       resizeTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      resizeObserver.disconnect();
       window.removeEventListener("resize", scheduleResize);
       window.removeEventListener("orientationchange", scheduleResize);
+      window.visualViewport?.removeEventListener("scroll", scheduleResize);
       window.visualViewport?.removeEventListener("resize", scheduleResize);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [map]);
 
