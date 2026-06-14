@@ -190,23 +190,33 @@ textarea::placeholder {
   }
 
   .mq-bottom-nav {
-    padding-bottom: 0;
-    padding-left: max(0.65rem, env(safe-area-inset-left));
-    padding-right: max(0.65rem, env(safe-area-inset-right));
+    padding: 0;
   }
 
   .mq-bottom-nav-inner {
-    max-width: min(430px, calc(100vw - 1.3rem));
+    width: 100%;
+    max-width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 1.55rem 1.55rem 0 0;
+    background: rgba(0, 0, 0, 0.96);
   }
 
   .mq-bottom-nav-grid {
-    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom));
+    padding: 0.55rem max(0.7rem, env(safe-area-inset-right)) calc(0.55rem + env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left));
+  }
+
+  .mq-bottom-nav-item {
+    min-height: 50px;
+    gap: 0.25rem;
+    font-size: 10px;
   }
 
   .mq-map-active .mq-map-controls {
     top: auto;
     right: max(0.85rem, env(safe-area-inset-right));
-    bottom: calc(5.95rem + env(safe-area-inset-bottom));
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
     gap: 0.65rem;
   }
 
