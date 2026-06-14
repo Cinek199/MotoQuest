@@ -111,27 +111,28 @@ export default function MapHud({
         </div>
 
         <section className="mq-map-region-card mt-4 overflow-hidden rounded-[1.35rem] border border-white/10 bg-black/70 shadow-2xl backdrop-blur-xl">
-          <div className="flex items-center gap-3 px-4 py-3">
+          <div className="mq-map-region-card-inner flex items-center gap-3 px-4 py-3">
             <VoivodeshipCrest name={currentVoivodeship} />
 
-            <div className="min-w-0 flex-1">
+            <div className="mq-map-region-content min-w-0 flex-1">
               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Odkrywasz
               </div>
               <div className="truncate text-sm font-black text-white">
                 {currentVoivodeship}
               </div>
-            </div>
-
-            <div className="w-20">
-              <div className="mb-1 text-right text-[10px] font-black text-lime-400">
-                {explorationPercent}
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-orange-500 to-lime-400"
-                  style={{ width: `${explorationWidth}%` }}
-                />
+              <div className="mq-map-region-progress mt-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-900">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-orange-500 to-lime-400"
+                      style={{ width: `${explorationWidth}%` }}
+                    />
+                  </div>
+                  <div className="shrink-0 text-[10px] font-black text-lime-400">
+                    {explorationPercent}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
