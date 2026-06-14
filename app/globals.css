@@ -175,7 +175,7 @@ textarea::placeholder {
   .mq-map-active .mq-phone-frame,
   .mq-map-active .mq-map-shell {
     top: calc(-1 * env(safe-area-inset-top));
-    bottom: auto;
+    bottom: 0;
     height: calc(var(--mq-vh) + env(safe-area-inset-top));
     min-height: calc(var(--mq-vh) + env(safe-area-inset-top));
   }
@@ -187,6 +187,19 @@ textarea::placeholder {
 
   .mq-map-active .mq-map-hud-top {
     top: calc(env(safe-area-inset-top) + env(safe-area-inset-top) + 0.75rem);
+  }
+
+  .mq-map-active .mq-map-controls {
+    top: auto;
+    right: max(0.85rem, env(safe-area-inset-right));
+    bottom: calc(6.7rem + env(safe-area-inset-bottom));
+    gap: 0.65rem;
+  }
+
+  .mq-map-active .mq-map-controls button,
+  .mq-map-active .mq-map-controls > div {
+    transform: scale(0.92);
+    transform-origin: right bottom;
   }
 }
 
