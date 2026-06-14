@@ -115,6 +115,29 @@ textarea::placeholder {
   max-width: 430px;
 }
 
+.mq-map-active {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.mq-map-active .mq-phone-frame {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.mq-map-active .mq-map-shell {
+  height: calc(100dvh - 1.5rem);
+  min-height: 0;
+}
+
+.mq-map-active .mq-map-canvas {
+  height: calc(100dvh - 1.5rem);
+  min-height: 0;
+}
+
 @media (min-width: 760px) {
   .mq-phone-frame {
     margin-top: 1rem;
@@ -163,6 +186,22 @@ textarea::placeholder {
   .mq-map-canvas {
     height: calc(100dvh - 5rem - env(safe-area-inset-bottom));
     min-height: 300px;
+  }
+
+  .mq-map-active .mq-phone-frame {
+    height: 100dvh;
+    min-height: 100dvh;
+    padding: 0.35rem 0.55rem 0.45rem;
+  }
+
+  .mq-map-active .mq-map-shell {
+    height: calc(100dvh - 0.8rem);
+    min-height: 0;
+  }
+
+  .mq-map-active .mq-map-canvas {
+    height: calc(100dvh - 0.8rem);
+    min-height: 0;
   }
 
   .mq-screen {

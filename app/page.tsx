@@ -123,7 +123,12 @@ export default function Home() {
   }
 
   return (
-    <main className="mq-app-shell min-h-screen text-white">
+    <main
+      className={[
+        "mq-app-shell min-h-screen text-white",
+        activeTab === "map" ? "mq-map-active" : "",
+      ].join(" ")}
+    >
       <DevRuntimeGuard />
 
       <div className="mq-phone-frame relative z-10 mx-auto w-full px-3 py-3">
