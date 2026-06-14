@@ -189,10 +189,24 @@ textarea::placeholder {
     top: calc(env(safe-area-inset-top) + env(safe-area-inset-top) + 0.75rem);
   }
 
+  .mq-bottom-nav {
+    padding-bottom: 0;
+    padding-left: max(0.65rem, env(safe-area-inset-left));
+    padding-right: max(0.65rem, env(safe-area-inset-right));
+  }
+
+  .mq-bottom-nav-inner {
+    max-width: min(430px, calc(100vw - 1.3rem));
+  }
+
+  .mq-bottom-nav-grid {
+    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom));
+  }
+
   .mq-map-active .mq-map-controls {
     top: auto;
     right: max(0.85rem, env(safe-area-inset-right));
-    bottom: calc(6.7rem + env(safe-area-inset-bottom));
+    bottom: calc(5.95rem + env(safe-area-inset-bottom));
     gap: 0.65rem;
   }
 
