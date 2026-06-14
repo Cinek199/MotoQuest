@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { getDiscoveredAreaKm2 } from "../lib/explorationProgress";
 import { getJson, getNumber, STORAGE_KEYS } from "../lib/storage";
 import type { FinishedTrip } from "../lib/trips";
 
@@ -43,16 +44,16 @@ const GOALS: AchievementGoal[] = [
   },
   {
     id: "tiles-100",
-    target: 100,
-    title: "Odkrywca kafelkow",
-    unit: "kafelkow",
+    target: 25,
+    title: "Odkrywca obszaru",
+    unit: "km²",
     xp: 750,
   },
   {
     id: "tiles-1000",
-    target: 1000,
-    title: "Kartograf MotoQuest",
-    unit: "kafelkow",
+    target: 250,
+    title: "Kartograf powierzchni",
+    unit: "km²",
     xp: 3000,
   },
   {
@@ -109,6 +110,7 @@ const GOALS: AchievementGoal[] = [
 export default function AchievementsPanel() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [progress, setProgress] = useState({
+    areaKm2: 0,
     distance: 0,
     tiles: 0,
     towns: 0,
@@ -123,11 +125,13 @@ export default function AchievementsPanel() {
         []
       );
       const trips = getJson<FinishedTrip[]>(STORAGE_KEYS.trips, []);
+      const tiles = getJson<string[]>(STORAGE_KEYS.tiles, []);
 
       setAchievements(savedAchievements);
       setProgress({
+        areaKm2: getDiscoveredAreaKm2(tiles.length),
         distance: getNumber(STORAGE_KEYS.distance),
-        tiles: getJson<string[]>(STORAGE_KEYS.tiles, []).length,
+        tiles: tiles.length,
         towns: getJson<string[]>(STORAGE_KEYS.towns, []).length,
         trips: trips.length,
         voivodeships: getJson<string[]>(STORAGE_KEYS.voivodeships, []).length,
@@ -302,12 +306,15 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 }
 
 function formatGoalValue(value: number, goal: AchievementGoal) {
-  return Math.min(value, goal.target).toFixed(goal.unit === "km" ? 1 : 0);
+  const precision = goal.unit === "km" || goal.unit === "km²" ? 1 : 0;
+
+  return Math.min(value, goal.target).toFixed(precision);
 }
 
 function getGoalValue(
   goal: AchievementGoal,
   progress: {
+    areaKm2: number;
     distance: number;
     tiles: number;
     towns: number;
@@ -319,8 +326,8 @@ function getGoalValue(
     return progress.distance;
   }
 
-  if (goal.unit === "kafelkow") {
-    return progress.tiles;
+  if (goal.unit === "km²") {
+    return progress.areaKm2;
   }
 
   if (goal.unit === "miejscowosci") {

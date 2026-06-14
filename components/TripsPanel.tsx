@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { downloadTripGpx } from "../lib/gpx";
+import { formatDiscoveredArea } from "../lib/explorationProgress";
 import { savePlayer } from "../lib/playerService";
 import { supabase } from "../lib/supabase";
 import { getJson, getNumber, setJson, STORAGE_KEYS } from "../lib/storage";
@@ -470,7 +471,7 @@ function TripMetricsGrid({
         label="Sr. predkosc"
         value={`${trip.averageSpeedKmh.toFixed(1)} km/h`}
       />
-      <TripMetric label="Kafelki" value={String(trip.tiles)} />
+      <TripMetric label="Obszar" value={formatDiscoveredArea(trip.tiles)} />
       <TripMetric label="Miejscowosci" value={String(trip.towns)} />
       <TripMetric label="Punkty GPS" value={String(trip.route.length)} />
     </div>
@@ -685,7 +686,7 @@ function buildTripShareText(trip: FinishedTrip) {
     `Dystans: ${trip.distance.toFixed(1)} km`,
     `Czas: ${trip.duration} min`,
     `Srednia predkosc: ${trip.averageSpeedKmh.toFixed(1)} km/h`,
-    `Odkryte kafelki: ${trip.tiles}`,
+    `Odkryty obszar: ${formatDiscoveredArea(trip.tiles)}`,
     `Miejscowosci: ${trip.towns}`,
     `XP: +${trip.xp}`,
   ].join("\n");

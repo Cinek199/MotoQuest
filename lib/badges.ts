@@ -1,7 +1,6 @@
-
 export const BADGES = [
-  'Pierwszy kafelek',
-  '10 kafelków',
-  'Pierwsza miejscowość',
-  'Lubuskie odkryte'
+  "Pierwszy odkryty obszar",
+  "2.5 km² odkryte",
+  "Pierwsza miejscowosc",
+  "Lubuskie odkryte",
 ];

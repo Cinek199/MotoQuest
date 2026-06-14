@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { getActiveBike } from "../lib/garage";
+import {
+  formatDiscoveredArea,
+  formatDiscoveryPercent,
+} from "../lib/explorationProgress";
 import { getProfile, PlayerProfile, saveProfile } from "../lib/profile";
 import { savePlayer } from "../lib/playerService";
 import { getJson, getNumber, STORAGE_KEYS } from "../lib/storage";
@@ -32,10 +36,6 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   const activeBike = getActiveBike();
   const distanceKm = getNumber(STORAGE_KEYS.distance);
   const tripsCount = getJson<unknown[]>(STORAGE_KEYS.trips, []).length;
-  const voivodeshipCount = getJson<unknown[]>(
-    STORAGE_KEYS.voivodeships,
-    []
-  ).length;
   const xpInLevel = stats.xp % 1000;
   const xpPercent = Math.min(100, Math.round((xpInLevel / 1000) * 100));
 
@@ -161,8 +161,8 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
           </div>
 
           <div className="grid grid-cols-2 border-t border-white/10">
-            <ProfileMetric label="Odkryte" value={`${voivodeshipCount}`} />
-            <ProfileMetric label="Kafelki" value={String(stats.tiles)} />
+            <ProfileMetric label="Polska" value={formatDiscoveryPercent(stats.tiles)} />
+            <ProfileMetric label="Obszar" value={formatDiscoveredArea(stats.tiles)} />
             <ProfileMetric label="Trasy" value={String(tripsCount)} />
             <ProfileMetric label="Dystans" value={`${distanceKm.toFixed(0)} km`} />
           </div>

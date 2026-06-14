@@ -2,6 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
+import {
+  formatDiscoveredArea,
+  formatDiscoveryPercent,
+  getPolandDiscoveryPercent,
+} from "../lib/explorationProgress";
 import { getProfile, type PlayerProfile } from "../lib/profile";
 import type { ActiveTrip } from "../lib/trips";
 
@@ -38,7 +43,9 @@ export default function MapHud({
     avatarUrl: "",
     nickname: "MotoManiak",
   }));
-  const explorationLevel = Math.min(100, Math.round((tilesCount / 500) * 100));
+  const explorationLevel = Math.min(100, getPolandDiscoveryPercent(tilesCount));
+  const explorationPercent = formatDiscoveryPercent(tilesCount);
+  const explorationWidth = explorationLevel > 0 ? Math.max(3, explorationLevel) : 0;
   const gpsReady = currentTown !== "Ladowanie..." && currentTown !== "Nieznana";
   const recordingTime = activeTrip
     ? formatRecordingTime(Math.max(0, Math.floor((Date.now() - activeTrip.startedAt) / 1000)))
@@ -118,12 +125,12 @@ export default function MapHud({
 
             <div className="w-20">
               <div className="mb-1 text-right text-[10px] font-black text-lime-400">
-                {explorationLevel}%
+                {explorationPercent}
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-orange-500 to-lime-400"
-                  style={{ width: `${explorationLevel}%` }}
+                  style={{ width: `${explorationWidth}%` }}
                 />
               </div>
             </div>
@@ -174,7 +181,7 @@ export default function MapHud({
 
             <div className="grid grid-cols-3 divide-x divide-white/10">
               <MapHudStat label="km" value={distanceKm.toFixed(1)} />
-              <MapHudStat label="kafelki" value={String(tilesCount)} />
+              <MapHudStat label="obszar" value={formatDiscoveredArea(tilesCount)} />
               <MapHudStat label="czas" value={recordingTime} />
             </div>
           </section>

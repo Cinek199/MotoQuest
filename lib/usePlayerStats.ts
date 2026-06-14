@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { savePlayer } from "./playerService";
 import { unlockAchievement } from "./achievements";
+import {
+  getDiscoveredAreaKm2,
+  getPolandDiscoveryPercent,
+} from "./explorationProgress";
 
 export interface PlayerStats {
+  areaKm2: number;
+  discoveryPercent: number;
   tiles: number;
   towns: number;
   xp: number;
@@ -14,6 +20,8 @@ export interface PlayerStats {
 
 export function usePlayerStats() {
   const [stats, setStats] = useState<PlayerStats>({
+    areaKm2: 0,
+    discoveryPercent: 0,
     tiles: 0,
     towns: 0,
     xp: 0,
@@ -46,6 +54,7 @@ export function usePlayerStats() {
         const distance = Number(localStorage.getItem("mq_distance") || "0");
 
         unlockProgressAchievements({
+          areaKm2: getDiscoveredAreaKm2(tiles),
           distance,
           tiles,
           towns,
@@ -71,6 +80,8 @@ export function usePlayerStats() {
           Math.floor(xp / 1000) + 1;
 
         setStats({
+          areaKm2: getDiscoveredAreaKm2(tiles),
+          discoveryPercent: getPolandDiscoveryPercent(tiles),
           tiles,
           towns,
           xp,
@@ -98,12 +109,14 @@ export function usePlayerStats() {
 }
 
 function unlockProgressAchievements({
+  areaKm2,
   distance,
   tiles,
   towns,
   trips,
   voivodeships,
 }: {
+  areaKm2: number;
   distance: number;
   tiles: number;
   towns: number;
@@ -118,12 +131,12 @@ function unlockProgressAchievements({
     unlockAchievement("towns-50", "Miliony drog", 1500);
   }
 
-  if (tiles >= 100) {
-    unlockAchievement("tiles-100", "Odkrywca kafelkow", 750);
+  if (areaKm2 >= 25 || tiles >= 100) {
+    unlockAchievement("tiles-100", "Odkrywca obszaru", 750);
   }
 
-  if (tiles >= 1000) {
-    unlockAchievement("tiles-1000", "Kartograf MotoQuest", 3000);
+  if (areaKm2 >= 250 || tiles >= 1000) {
+    unlockAchievement("tiles-1000", "Kartograf powierzchni", 3000);
   }
 
   if (voivodeships >= 8) {
