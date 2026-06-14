@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black",
+    statusBarStyle: "black-translucent",
     title: "MotoQuest",
   },
 
@@ -29,10 +29,16 @@ export const metadata: Metadata = {
     icon: "/icon-192.png",
     apple: "/icon-192.png",
   },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f97316",
+  themeColor: "#000000",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
