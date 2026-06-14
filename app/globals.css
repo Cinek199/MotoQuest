@@ -433,12 +433,14 @@ textarea::placeholder {
 
   .mq-map-hud-top {
     top: max(0.45rem, env(safe-area-inset-top));
-    left: max(0.55rem, env(safe-area-inset-left));
-    right: max(0.55rem, env(safe-area-inset-right));
+    left: max(0.35rem, env(safe-area-inset-left));
+    right: max(0.35rem, env(safe-area-inset-right));
   }
 
   .mq-map-hud-top > div:first-child {
-    max-width: 360px;
+    position: relative;
+    width: 100%;
+    max-width: none;
   }
 
   .mq-map-hud-top > div:first-child > div:first-child,
@@ -448,6 +450,13 @@ textarea::placeholder {
     border-radius: 0.9rem;
   }
 
+  .mq-map-hud-top > div:first-child > div:nth-child(2) {
+    position: absolute;
+    left: 50%;
+    width: min(280px, 42vw);
+    transform: translateX(-50%);
+  }
+
   .mq-map-hud-top > div:first-child .text-xl {
     font-size: 1rem;
   }
@@ -455,6 +464,7 @@ textarea::placeholder {
   .mq-map-region-card {
     max-width: 360px;
     margin-top: 0.55rem;
+    margin-right: auto;
     border-radius: 1rem;
   }
 
@@ -464,7 +474,7 @@ textarea::placeholder {
 
   .mq-map-controls {
     top: 5.9rem;
-    right: max(0.65rem, env(safe-area-inset-right));
+    right: max(0.35rem, env(safe-area-inset-right));
     gap: 0.45rem;
   }
 
