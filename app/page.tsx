@@ -19,8 +19,8 @@ import VoivodeshipPanel from "../components/VoivodeshipPanel";
 import XPBar from "../components/XPBar";
 
 import { signInAnonymously } from "../lib/auth";
-import { loadPlayer } from "../lib/loadPlayer";
 import { getUnreadNotificationsCount } from "../lib/notifications";
+import { loadPlayer } from "../lib/playerService";
 import { usePlayerStats } from "../lib/usePlayerStats";
 import { useScreenWakeLock } from "../lib/useScreenWakeLock";
 
@@ -86,7 +86,11 @@ export default function Home() {
       setLoadingStatus("Pobieranie postepu...");
       setProgress(50);
 
-      await loadPlayer(user.id);
+      try {
+        await loadPlayer(user.id);
+      } catch (error) {
+        console.error("Initial player load error:", error);
+      }
 
       setLoadingStatus("Ladowanie MotoQuest...");
       setProgress(100);

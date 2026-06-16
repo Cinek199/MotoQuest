@@ -50,16 +50,17 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
       setIsLoggedIn(true);
       try {
-  await loadPlayer(user.id);
-} catch (error) {
-  console.error("Load player after login error:", error);
-}
+        await loadPlayer(user.id);
+      } catch (error) {
+        console.error("Load player after login error:", error);
+        setStatus("Nie udalo sie pobrac postepu z chmury");
+      }
 
       const { data, error } = await supabase
         .from("profiles")
         .select("username, avatar_url")
         .eq("id", user.id)
-        .single<CloudProfile>();
+        .maybeSingle();
 
       if (error) {
         console.error("Profile load error:", error.message);
@@ -81,14 +82,15 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         return;
       }
 
+      const cloudData = data as CloudProfile | null;
       const cloudNickname =
-        data?.username?.trim() ||
+        cloudData?.username?.trim() ||
         user.user_metadata?.username ||
         savedProfile.nickname ||
         "MotoManiak";
 
       const cloudProfile: PlayerProfile = {
-        avatarUrl: data?.avatar_url || savedProfile.avatarUrl || "",
+        avatarUrl: cloudData?.avatar_url || savedProfile.avatarUrl || "",
         nickname: cloudNickname,
       };
 
@@ -135,6 +137,22 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
       return;
     }
 
+    const { data: takenProfile, error: checkError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("username", nextProfile.nickname)
+      .neq("id", user.id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error("Cloud profile username check error:", checkError.message);
+      throw new Error("PROFILE_CHECK_FAILED");
+    }
+
+    if (takenProfile) {
+      throw new Error("USERNAME_TAKEN");
+    }
+
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
       username: nextProfile.nickname,
@@ -149,13 +167,13 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   };
 
   const updateProfile = async (nextProfile: PlayerProfile) => {
-    saveProfile(nextProfile);
-    setProfile(nextProfile);
-    setNickname(nextProfile.nickname);
-
     if (isLoggedIn) {
       await updateCloudProfile(nextProfile);
     }
+
+    saveProfile(nextProfile);
+    setProfile(nextProfile);
+    setNickname(nextProfile.nickname);
 
     await syncPlayer();
   };
@@ -177,7 +195,15 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
       });
 
       setStatus("Profil zapisany");
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message === "USERNAME_TAKEN") {
+        setStatus("Ten nick jest juz zajety. Wybierz inny.");
+        return;
+      }
+
+      console.error("Save nickname error:", error);
+      setStatus("Nie udalo sie zapisac nicku w chmurze");
+      return;
       setStatus("Nie udało się zapisać nicku w chmurze");
     }
   };

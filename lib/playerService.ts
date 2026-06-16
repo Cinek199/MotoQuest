@@ -1,9 +1,15 @@
 import { supabase } from "./supabase";
 
+type Achievement = {
+  id?: string;
+  xp?: number;
+  [key: string]: unknown;
+};
+
 type PlayerProgress = {
   tiles: unknown[];
   towns: unknown[];
-  achievements: Array<{ id?: string; xp?: number; [key: string]: unknown }>;
+  achievements: Achievement[];
   trips: unknown[];
   distance_km: number;
   xp: number;
@@ -28,26 +34,35 @@ function writeJson(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function getItemKey(item: unknown): string {
+  if (typeof item === "string") {
+    return item;
+  }
+
+  if (
+    item &&
+    typeof item === "object" &&
+    "id" in item &&
+    typeof item.id === "string"
+  ) {
+    return item.id;
+  }
+
+  return JSON.stringify(item);
+}
+
 function mergeArrayUnique<T>(localItems: T[], cloudItems: T[]): T[] {
   const map = new Map<string, T>();
 
   [...cloudItems, ...localItems].forEach((item) => {
-    const key =
-      typeof item === "string"
-        ? item
-        : JSON.stringify(item);
-
-    map.set(key, item);
+    map.set(getItemKey(item), item);
   });
 
   return Array.from(map.values());
 }
 
-function mergeAchievements(
-  localItems: Array<{ id?: string; [key: string]: unknown }>,
-  cloudItems: Array<{ id?: string; [key: string]: unknown }>
-) {
-  const map = new Map<string, { id?: string; [key: string]: unknown }>();
+function mergeAchievements(localItems: Achievement[], cloudItems: Achievement[]) {
+  const map = new Map<string, Achievement>();
 
   [...cloudItems, ...localItems].forEach((item) => {
     const key = item.id || JSON.stringify(item);
@@ -57,22 +72,19 @@ function mergeAchievements(
   return Array.from(map.values());
 }
 
-function getLocalProgress(): PlayerProgress {
-  const tiles = readJson<unknown[]>("mq_tiles", []);
-  const towns = readJson<unknown[]>("mq_towns", []);
-  const achievements = readJson<Array<{ id?: string; xp?: number }>>(
-    "mq_achievements",
-    []
-  );
-  const trips = readJson<unknown[]>("mq_trips", []);
-  const distanceKm = Number(localStorage.getItem("mq_distance") || "0");
-
+function calculateProgress(
+  tiles: unknown[],
+  towns: unknown[],
+  achievements: Achievement[],
+  distanceKm: number,
+  trips: unknown[]
+): PlayerProgress {
   const achievementXp = achievements.reduce((sum, achievement) => {
     return sum + Number(achievement.xp || 0);
   }, 0);
 
-  const xp = tiles.length * 25 + towns.length * 250 + achievementXp;
-  const level = Math.floor(xp / 1000) + 1;
+  const calculatedXp = tiles.length * 25 + towns.length * 250 + achievementXp;
+  const calculatedLevel = Math.floor(calculatedXp / 1000) + 1;
 
   return {
     tiles,
@@ -80,9 +92,19 @@ function getLocalProgress(): PlayerProgress {
     achievements,
     trips,
     distance_km: distanceKm,
-    xp,
-    level,
+    xp: calculatedXp,
+    level: calculatedLevel,
   };
+}
+
+function getLocalProgress(): PlayerProgress {
+  const tiles = readJson<unknown[]>("mq_tiles", []);
+  const towns = readJson<unknown[]>("mq_towns", []);
+  const achievements = readJson<Achievement[]>("mq_achievements", []);
+  const trips = readJson<unknown[]>("mq_trips", []);
+  const distanceKm = Number(localStorage.getItem("mq_distance") || "0");
+
+  return calculateProgress(tiles, towns, achievements, distanceKm, trips);
 }
 
 function saveLocalProgress(progress: PlayerProgress) {
@@ -93,37 +115,40 @@ function saveLocalProgress(progress: PlayerProgress) {
   localStorage.setItem("mq_distance", String(progress.distance_km));
 }
 
-function mergeProgress(local: PlayerProgress, cloud: PlayerProgress): PlayerProgress {
+export function mergeProgress(
+  local: PlayerProgress,
+  cloud: PlayerProgress
+): PlayerProgress {
   const tiles = mergeArrayUnique(local.tiles, cloud.tiles);
   const towns = mergeArrayUnique(local.towns, cloud.towns);
   const achievements = mergeAchievements(local.achievements, cloud.achievements);
   const trips = mergeArrayUnique(local.trips, cloud.trips);
+
   const distanceKm = Math.max(
     Number(local.distance_km || 0),
     Number(cloud.distance_km || 0)
   );
 
-  const achievementXp = achievements.reduce((sum, achievement) => {
-    return sum + Number(achievement.xp || 0);
-  }, 0);
-
-  const xp = tiles.length * 25 + towns.length * 250 + achievementXp;
-  const level = Math.floor(xp / 1000) + 1;
-
-  return {
+  const recalculated = calculateProgress(
     tiles,
     towns,
     achievements,
-    trips,
-    distance_km: distanceKm,
-    xp,
-    level,
+    distanceKm,
+    trips
+  );
+
+  return {
+    ...recalculated,
+    xp: Math.max(recalculated.xp, Number(local.xp || 0), Number(cloud.xp || 0)),
+    level: Math.max(
+      recalculated.level,
+      Number(local.level || 1),
+      Number(cloud.level || 1)
+    ),
   };
 }
 
-export async function savePlayer(userId: string) {
-  const progress = getLocalProgress();
-
+async function saveProgressToCloud(userId: string, progress: PlayerProgress) {
   const { error } = await supabase.from("player_progress").upsert(
     {
       user_id: userId,
@@ -147,6 +172,12 @@ export async function savePlayer(userId: string) {
   }
 }
 
+export async function savePlayer(userId: string) {
+  const progress = getLocalProgress();
+  await saveProgressToCloud(userId, progress);
+  return progress;
+}
+
 export async function loadPlayer(userId: string) {
   const { data, error } = await supabase
     .from("player_progress")
@@ -162,7 +193,7 @@ export async function loadPlayer(userId: string) {
   const localProgress = getLocalProgress();
 
   if (!data) {
-    await savePlayer(userId);
+    await saveProgressToCloud(userId, localProgress);
     return localProgress;
   }
 
@@ -179,7 +210,10 @@ export async function loadPlayer(userId: string) {
   const mergedProgress = mergeProgress(localProgress, cloudProgress);
 
   saveLocalProgress(mergedProgress);
-  await savePlayer(userId);
+  await saveProgressToCloud(userId, mergedProgress);
+
+  window.dispatchEvent(new Event("motoquest-progress-updated"));
+  window.dispatchEvent(new Event("storage"));
 
   return mergedProgress;
 }
