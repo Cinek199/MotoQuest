@@ -17,6 +17,11 @@ type PlayerProfilePanelProps = {
   stats: PlayerStats;
 };
 
+type CloudProfile = {
+  username: string | null;
+  avatar_url: string | null;
+};
+
 export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   const [profile, setProfile] = useState<PlayerProfile>({
     avatarUrl: "",
@@ -25,12 +30,79 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   const [nickname, setNickname] = useState("");
   const [status, setStatus] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const savedProfile = getProfile();
+    const loadProfile = async () => {
+      const savedProfile = getProfile();
 
-    setProfile(savedProfile);
-    setNickname(savedProfile.nickname);
+      setProfile(savedProfile);
+      setNickname(savedProfile.nickname);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setIsLoggedIn(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", user.id)
+        .single<CloudProfile>();
+
+      if (error) {
+        console.error("Profile load error:", error.message);
+
+        const metadataNickname = user.user_metadata?.username;
+        const fallbackNickname =
+          typeof metadataNickname === "string" && metadataNickname.trim()
+            ? metadataNickname.trim()
+            : savedProfile.nickname || "MotoManiak";
+
+        const fallbackProfile: PlayerProfile = {
+          ...savedProfile,
+          nickname: fallbackNickname,
+        };
+
+        saveProfile(fallbackProfile);
+        setProfile(fallbackProfile);
+        setNickname(fallbackProfile.nickname);
+        return;
+      }
+
+      const cloudNickname =
+        data?.username?.trim() ||
+        user.user_metadata?.username ||
+        savedProfile.nickname ||
+        "MotoManiak";
+
+      const cloudProfile: PlayerProfile = {
+        avatarUrl: data?.avatar_url || savedProfile.avatarUrl || "",
+        nickname: cloudNickname,
+      };
+
+      saveProfile(cloudProfile);
+      setProfile(cloudProfile);
+      setNickname(cloudProfile.nickname);
+    };
+
+    void loadProfile();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void loadProfile();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const activeBike = getActiveBike();
@@ -49,20 +121,60 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
     }
   };
 
+  const updateCloudProfile = async (nextProfile: PlayerProfile) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return;
+    }
+
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      username: nextProfile.nickname,
+      avatar_url: nextProfile.avatarUrl || null,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Cloud profile update error:", error.message);
+      throw error;
+    }
+  };
+
   const updateProfile = async (nextProfile: PlayerProfile) => {
     saveProfile(nextProfile);
     setProfile(nextProfile);
     setNickname(nextProfile.nickname);
+
+    if (isLoggedIn) {
+      await updateCloudProfile(nextProfile);
+    }
+
     await syncPlayer();
   };
 
   const saveNickname = async () => {
+    const cleanNickname = nickname.trim();
+
     setStatus("");
-    await updateProfile({
-      ...profile,
-      nickname,
-    });
-    setStatus("Profil zapisany");
+
+    if (cleanNickname.length < 3) {
+      setStatus("Nick musi mieć minimum 3 znaki");
+      return;
+    }
+
+    try {
+      await updateProfile({
+        ...profile,
+        nickname: cleanNickname,
+      });
+
+      setStatus("Profil zapisany");
+    } catch {
+      setStatus("Nie udało się zapisać nicku w chmurze");
+    }
   };
 
   const uploadAvatar = async (file: File) => {
@@ -78,7 +190,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         .upload(fileName, file);
 
       if (error) {
-        setStatus("Nie udalo sie wyslac avatara. Sprawdz bucket avatars.");
+        setStatus("Nie udało się wysłać avatara. Sprawdź bucket avatars.");
         return;
       }
 
@@ -90,6 +202,8 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
       });
 
       setStatus("Avatar zapisany");
+    } catch {
+      setStatus("Nie udało się zapisać avatara");
     } finally {
       setUploadingAvatar(false);
     }
@@ -141,6 +255,11 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
                     ? `${activeBike.brand} ${activeBike.model}`
                     : "Brak aktywnego motocykla"}
                 </div>
+                <div className="mt-2 text-[11px] font-bold text-zinc-500">
+                  {isLoggedIn
+                    ? "Konto zalogowane"
+                    : "Profil lokalny — zaloguj się, aby przenosić konto"}
+                </div>
               </div>
             </div>
 
@@ -161,8 +280,14 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
           </div>
 
           <div className="grid grid-cols-2 border-t border-white/10">
-            <ProfileMetric label="Polska" value={formatDiscoveryPercent(stats.tiles)} />
-            <ProfileMetric label="Obszar" value={formatDiscoveredArea(stats.tiles)} />
+            <ProfileMetric
+              label="Polska"
+              value={formatDiscoveryPercent(stats.tiles)}
+            />
+            <ProfileMetric
+              label="Obszar"
+              value={formatDiscoveredArea(stats.tiles)}
+            />
             <ProfileMetric label="Trasy" value={String(tripsCount)} />
             <ProfileMetric label="Dystans" value={`${distanceKm.toFixed(0)} km`} />
           </div>
