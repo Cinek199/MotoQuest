@@ -8,7 +8,7 @@ import {
   formatDiscoveryPercent,
 } from "../lib/explorationProgress";
 import { getProfile, PlayerProfile, saveProfile } from "../lib/profile";
-import { savePlayer } from "../lib/playerService";
+import { loadPlayer, savePlayer } from "../lib/playerService";
 import { getJson, getNumber, STORAGE_KEYS } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import type { PlayerStats } from "../lib/usePlayerStats";
@@ -49,6 +49,11 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
       }
 
       setIsLoggedIn(true);
+      try {
+  await loadPlayer(user.id);
+} catch (error) {
+  console.error("Load player after login error:", error);
+}
 
       const { data, error } = await supabase
         .from("profiles")
