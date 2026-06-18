@@ -39,6 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.android-jdk/
 moto.zip
 moto.zip
 *.zip
