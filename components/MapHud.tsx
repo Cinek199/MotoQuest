@@ -18,6 +18,7 @@ type MapHudProps = {
   hasUnreadNotifications: boolean;
   isFollowingUser: boolean;
   onCenterUser?: () => void;
+  onEnterPictureInPicture?: () => void;
   onOpenNotifications: () => void;
   onStopRecording?: () => void;
   onZoomIn?: () => void;
@@ -33,6 +34,7 @@ export default function MapHud({
   hasUnreadNotifications,
   isFollowingUser,
   onCenterUser,
+  onEnterPictureInPicture,
   onOpenNotifications,
   onStopRecording,
   onZoomIn,
@@ -148,6 +150,14 @@ export default function MapHud({
         >
           <PositionMarkerIcon />
         </HudRoundButton>
+        {onEnterPictureInPicture && (
+          <HudRoundButton
+            ariaLabel="Otworz MotoQuest w malym oknie"
+            onClick={onEnterPictureInPicture}
+          >
+            <PictureInPictureIcon />
+          </HudRoundButton>
+        )}
         <div className="pointer-events-auto overflow-hidden rounded-full border border-white/10 bg-black/82 shadow-2xl backdrop-blur-xl">
           <HudZoomButton label="+" onClick={onZoomIn} />
           <div className="h-px bg-white/10" />
@@ -260,6 +270,24 @@ function PositionMarkerIcon() {
         fill="currentColor"
       />
       <circle cx="16" cy="16" r="2.6" fill="#0b0b0d" stroke="white" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function PictureInPictureIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <rect x="12" y="11" width="7" height="5" rx="1" fill="currentColor" />
     </svg>
   );
 }

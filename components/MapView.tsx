@@ -5,6 +5,10 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import MapHud from "./MapHud";
+import {
+  enterNativePictureInPicture,
+  isNativeAndroid,
+} from "../lib/nativeAndroid";
 import { savePlayer } from "../lib/playerService";
 import { supabase } from "../lib/supabase";
 import { createTilePolygon, TILE_SIZE } from "../lib/tiles";
@@ -332,6 +336,12 @@ export default function MapView({
     }
   };
 
+  const enterPictureInPicture = () => {
+    void enterNativePictureInPicture().catch((error) => {
+      console.error("Picture in picture error:", error);
+    });
+  };
+
   return (
     <div className="mq-map-shell relative overflow-hidden rounded-[2.15rem] border border-white/10 bg-zinc-950 shadow-2xl shadow-black/80 ring-1 ring-orange-500/10">
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.12),transparent_34%),linear-gradient(180deg,rgba(0,0,0,0.12),transparent_35%,rgba(0,0,0,0.34))]" />
@@ -355,6 +365,9 @@ export default function MapView({
         hasUnreadNotifications={hasUnreadNotifications}
         isFollowingUser={isFollowingUser}
         onCenterUser={centerOnUser}
+        onEnterPictureInPicture={
+          isNativeAndroid() ? enterPictureInPicture : undefined
+        }
         onOpenNotifications={onOpenNotifications}
         onStopRecording={stopActiveTrip}
         tilesCount={tilesCount}

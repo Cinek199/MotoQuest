@@ -7,6 +7,12 @@ import { unlockAchievement } from "./achievements";
 import { calculateDistanceKm } from "./distance";
 import { addDistanceToActiveBike } from "./garage";
 import { getVoivodeship } from "./getVoivodeship";
+import {
+  drainNativeLocations,
+  isNativeAndroid,
+  type NativeLocationPoint,
+  startNativeBackgroundTracking,
+} from "./nativeAndroid";
 import { savePlayer } from "./playerService";
 import { getTownName } from "./reverseGeocode";
 import {
@@ -110,8 +116,50 @@ export function useMotoQuestTracking({
       }
     );
 
+    let nativeSyncRunning = false;
+
+    const syncNativeTracking = async () => {
+      if (!isNativeAndroid() || nativeSyncRunning) {
+        return;
+      }
+
+      nativeSyncRunning = true;
+
+      try {
+        await startNativeBackgroundTracking();
+        const points = await drainNativeLocations();
+
+        if (points.length > 0) {
+          await handleNativeLocations(points, map);
+        }
+      } catch (error) {
+        if (
+          !(error instanceof Error) ||
+          !error.message.includes("LOCATION_PERMISSION_REQUIRED")
+        ) {
+          console.error("Native background tracking error:", error);
+        }
+      } finally {
+        nativeSyncRunning = false;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncNativeTracking();
+      }
+    };
+
+    void syncNativeTracking();
+    const nativeSyncInterval = window.setInterval(syncNativeTracking, 5000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleVisibilityChange);
+
     return () => {
       navigator.geolocation.clearWatch(watchId);
+      window.clearInterval(nativeSyncInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleVisibilityChange);
       cleanupCompass();
     };
   }, [addTileLayer, map]);
@@ -176,6 +224,94 @@ export function useMotoQuestTracking({
     if ((progressChanged || tileChanged) && userIdRef.current) {
       await savePlayer(userIdRef.current);
     }
+  }
+
+  async function handleNativeLocations(
+    points: NativeLocationPoint[],
+    map: maplibregl.Map
+  ) {
+    const validPoints = points
+      .filter(
+        (point) =>
+          Number.isFinite(point.lat) &&
+          Number.isFinite(point.lon) &&
+          Number.isFinite(point.timestamp)
+      )
+      .sort((first, second) => first.timestamp - second.timestamp);
+
+    if (validPoints.length === 0) {
+      return;
+    }
+
+    lastPositionRef.current = {
+      lat: validPoints[0].lat,
+      lon: validPoints[0].lon,
+    };
+
+    let tileChanged = false;
+
+    validPoints.forEach((point) => {
+      const nextPosition = { lat: point.lat, lon: point.lon };
+
+      appendActiveTripPoint({
+        accuracy: point.accuracy,
+        lat: point.lat,
+        lon: point.lon,
+        speedKmh:
+          typeof point.speed === "number" && Number.isFinite(point.speed)
+            ? point.speed * 3.6
+            : null,
+        timestamp: point.timestamp,
+      });
+
+      updateDistance(nextPosition);
+      tileChanged = discoverTile(point.lat, point.lon, map) || tileChanged;
+    });
+
+    const latest = validPoints[validPoints.length - 1];
+    const latestPosition = { lat: latest.lat, lon: latest.lon };
+
+    if (typeof latest.bearing === "number" && Number.isFinite(latest.bearing)) {
+      markerHeadingRef.current = smoothHeading(
+        markerHeadingRef.current,
+        latest.bearing
+      );
+    }
+
+    setCurrentPosition(latestPosition);
+    updateMapPosition(map, latestPosition);
+
+    const town = await getTownName(latest.lat, latest.lon);
+    const voivodeship = await getVoivodeship(latest.lat, latest.lon);
+
+    setCurrentTown(town);
+    setCurrentVoivodeship(voivodeship);
+
+    let progressChanged = false;
+
+    if (town !== "Nieznana") {
+      progressChanged =
+        addUniqueString(STORAGE_KEYS.towns, town).added || progressChanged;
+    }
+
+    if (voivodeship !== "Nieznane") {
+      const voivodeshipResult = addUniqueString(
+        STORAGE_KEYS.voivodeships,
+        voivodeship
+      );
+      progressChanged = voivodeshipResult.added || progressChanged;
+
+      if (voivodeshipResult.added) {
+        window.dispatchEvent(new Event("mq-voivodeships-updated"));
+      }
+    }
+
+    if ((progressChanged || tileChanged) && userIdRef.current) {
+      await savePlayer(userIdRef.current);
+    }
+
+    window.dispatchEvent(new Event("motoquest-progress-updated"));
+    window.dispatchEvent(new Event("storage"));
   }
 
   function updateDistance(position: Position) {
