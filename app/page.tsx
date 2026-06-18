@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import AchievementsPanel from "../components/AchievementsPanel";
 import BikeProfilePanel from "../components/BikeProfilePanel";
+import CityMissionsPanel from "../components/CityMissionsPanel";
 import CloudStatusPanel from "../components/CloudStatusPanel";
 import DevRuntimeGuard from "../components/DevRuntimeGuard";
 import GaragePanel from "../components/GaragePanel";
@@ -13,6 +14,7 @@ import NotificationsPanel from "../components/NotificationsPanel";
 import PlayerProfilePanel from "../components/PlayerProfilePanel";
 import PolandMap from "../components/PolandMap";
 import SplashScreen from "../components/SplashScreen";
+import SpecialBadgesPanel from "../components/SpecialBadgesPanel";
 import TownsPanel from "../components/TownsPanel";
 import TripsPanel from "../components/TripsPanel";
 import VoivodeshipPanel from "../components/VoivodeshipPanel";
@@ -164,6 +166,7 @@ export default function Home() {
             <div className="grid gap-3">
               <TownsPanel />
             </div>
+            <CityMissionsPanel />
           </section>
         )}
 
@@ -181,6 +184,7 @@ export default function Home() {
           <section className="mq-screen space-y-3">
             <ScreenHeader title="Profil" action="gear" />
             <PlayerProfilePanel stats={stats} />
+            <SpecialBadgesPanel />
             <XPBar xp={stats.xp} />
             <div className="grid gap-3">
               <CloudStatusPanel />
