@@ -1,17 +1,14 @@
 import AuthRegisterForm from "../../../components/AuthRegisterForm";
+import AuthShell from "../../../components/AuthShell";
 
 export default function RegisterPage() {
   return (
-    <main
-      style={{
-        background: "#0b0f14",
-        color: "white",
-        minHeight: "100vh",
-        padding: 24,
-      }}
+    <AuthShell
+      eyebrow="Panel rejestracji"
+      title={<>Dolacz do <span>MotoQuest</span></>}
+      subtitle="Utworz konto i zacznij odkrywac swiat"
     >
-      <h1>Rejestracja</h1>
       <AuthRegisterForm />
-    </main>
+    </AuthShell>
   );
 }

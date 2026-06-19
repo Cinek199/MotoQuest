@@ -147,7 +147,7 @@ export default function CityMissionsPanel() {
           });
 
         if (uploadError) throw uploadError;
-        setStatus("AI analizuje zdjecie...");
+        setStatus("Weryfikacja zdjecia i GPS...");
       } else {
         setStatus("Potwierdzanie miejsca...");
       }
@@ -184,11 +184,7 @@ export default function CityMissionsPanel() {
       }
 
       await savePlayer(user.id);
-      setStatus(
-        data.ai?.confidence
-          ? `Misja zaliczona. Pewnosc AI: ${Math.round(data.ai.confidence * 100)}%`
-          : "Misja zaliczona."
-      );
+      setStatus("Misja zaliczona przez GPS.");
       await loadMissions(selectedCityId);
     } catch (error) {
       console.error("Mission verification error:", error);

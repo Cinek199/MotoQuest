@@ -48,7 +48,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         return;
       }
 
-      setIsLoggedIn(true);
+      setIsLoggedIn(user.is_anonymous !== true);
       try {
         await loadPlayer(user.id);
       } catch (error) {
@@ -117,6 +117,17 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
   const tripsCount = getJson<unknown[]>(STORAGE_KEYS.trips, []).length;
   const xpInLevel = stats.xp % 1000;
   const xpPercent = Math.min(100, Math.round((xpInLevel / 1000) * 100));
+
+  if (!isLoggedIn) {
+    return (
+      <section className="mq-profile-guest">
+        <img src="/icon-512.png" alt="MotoQuest" />
+        <h2>Nie jestes zalogowany</h2>
+        <p>Zaloguj sie, aby zapisywac postepy i synchronizowac je miedzy urzadzeniami.</p>
+        <div><a href="/login">Zaloguj sie</a><a href="/register" className="secondary">Zarejestruj sie</a></div>
+      </section>
+    );
+  }
 
   const syncPlayer = async () => {
     const {

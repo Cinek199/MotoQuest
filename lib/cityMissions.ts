@@ -24,7 +24,6 @@ export type MissionCity = {
 };
 
 export type VerificationResult = {
-  ai?: { confidence?: number; reason?: string } | null;
   approved?: boolean;
   cityCompleted?: boolean;
   error?: string;

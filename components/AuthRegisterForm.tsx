@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { AuthDivider, AuthInput, OAuthButton } from "./AuthLoginForm";
 
 export default function AuthRegisterForm() {
   const [username, setUsername] = useState("");
@@ -9,150 +12,68 @@ export default function AuthRegisterForm() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+
+  const oauth = async (provider: "apple" | "google") => {
+    const { supabase } = await import("../lib/supabase");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+    if (error) setMessage("Nie udalo sie uruchomic rejestracji zewnetrznej.");
+  };
 
   const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const cleanUsername = username.trim();
     const cleanEmail = email.trim().toLowerCase();
-
     setMessage("");
-
-    if (cleanUsername.length < 3) {
-      setMessage("Nick musi miec minimum 3 znaki.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessage("Haslo musi miec minimum 6 znakow.");
-      return;
-    }
-
+    if (cleanUsername.length < 3) return setMessage("Nick musi miec minimum 3 znaki.");
+    if (password.length < 6) return setMessage("Haslo musi miec minimum 6 znakow.");
     setIsLoading(true);
 
     try {
       const { supabase } = await import("../lib/supabase");
-
-      const { data: existingProfile, error: checkError } = await supabase
+      const { data: existing } = await supabase
         .from("profiles")
         .select("id")
         .ilike("username", cleanUsername)
         .maybeSingle();
-
-      if (checkError) {
-        console.error("Username check error:", checkError);
-        setMessage("Nie udalo sie sprawdzic nicku. Sprobuj ponownie.");
-        return;
-      }
-
-      if (existingProfile) {
-        setMessage("Ten nick jest juz zajety. Wybierz inny.");
-        return;
-      }
+      if (existing) throw new Error("Ten nick jest juz zajety.");
 
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
-        options: {
-          data: {
-            username: cleanUsername,
-          },
-        },
+        options: { data: { username: cleanUsername } },
       });
-
-      if (error) {
-        const errorMessage = error.message.toLowerCase();
-
-        if (
-          errorMessage.includes("already registered") ||
-          errorMessage.includes("already exists") ||
-          errorMessage.includes("user already")
-        ) {
-          setMessage("Ten e-mail jest juz zarejestrowany.");
-          return;
-        }
-
-        console.error("Register auth error:", error);
-        setMessage("Nie udalo sie utworzyc konta. Sprobuj ponownie.");
-        return;
+      if (error || data.user?.identities?.length === 0) {
+        throw new Error("Nie udalo sie utworzyc konta. E-mail moze byc juz zajety.");
       }
-
-      if (data.user?.identities && data.user.identities.length === 0) {
-        setMessage("Ten e-mail jest juz zarejestrowany.");
-        return;
-      }
-
-      if (data.user && data.session) {
-        const { error: profileError } = await supabase.from("profiles").upsert({
-          id: data.user.id,
-          username: cleanUsername,
-          updated_at: new Date().toISOString(),
-        });
-
-        if (profileError) {
-          console.error("Profile create after register error:", profileError);
-        }
-      }
-
-      if (data.user) {
-        setMessage(
-          data.session
-            ? "Konto utworzone. Mozesz sie zalogowac."
-            : "Konto utworzone. Sprawdz e-mail, jesli Supabase wymaga potwierdzenia."
-        );
-        router.push("/login");
-      }
+      setMessage("Konto utworzone. Sprawdz e-mail, jesli wymagane jest potwierdzenie.");
+      window.setTimeout(() => router.push("/login"), 900);
     } catch (error) {
-      console.error("Register error:", error);
-      setMessage("Wystapil blad podczas rejestracji.");
+      setMessage(error instanceof Error ? error.message : "Blad rejestracji.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleRegister}
-      style={{ display: "grid", gap: 12, maxWidth: 360 }}
-    >
-      <input
-        type="text"
-        value={username}
-        onChange={(event) => setUsername(event.target.value)}
-        placeholder="Nick"
-        required
-        minLength={3}
-        disabled={isLoading}
-        style={{ padding: 12 }}
-      />
-
-      <input
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        placeholder="E-mail"
-        required
-        disabled={isLoading}
-        style={{ padding: 12 }}
-      />
-
-      <input
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        placeholder="Haslo"
-        required
-        minLength={6}
-        disabled={isLoading}
-        style={{ padding: 12 }}
-      />
-
-      <button type="submit" disabled={isLoading} style={{ padding: 12 }}>
-        {isLoading ? "Tworzenie konta..." : "Zarejestruj"}
+    <form onSubmit={handleRegister} className="mq-auth-form">
+      <AuthInput icon="user" type="text" value={username} onChange={setUsername} placeholder="Nick" disabled={isLoading} />
+      <div className="mq-auth-hint">Min. 3 znaki, unikalny</div>
+      <AuthInput icon="mail" type="email" value={email} onChange={setEmail} placeholder="E-mail" disabled={isLoading} />
+      <AuthInput icon="lock" type={showPassword ? "text" : "password"} value={password} onChange={setPassword} placeholder="Haslo" disabled={isLoading} action={() => setShowPassword((value) => !value)} />
+      <div className="mq-auth-hint">Min. 6 znakow</div>
+      <button type="submit" disabled={isLoading} className="mq-auth-primary">
+        {isLoading ? "Tworzenie konta..." : "Zarejestruj sie"}
       </button>
-
-      {message && <p>{message}</p>}
+      <AuthDivider />
+      <OAuthButton label="Zarejestruj sie przez Google" onClick={() => void oauth("google")} mark="G" />
+      <OAuthButton label="Zarejestruj sie przez Apple" onClick={() => void oauth("apple")} mark="A" />
+      {message && <div className="mq-auth-message">{message}</div>}
+      <div className="mq-auth-switch">Masz juz konto? <Link href="/login">Zaloguj sie</Link></div>
     </form>
   );
 }

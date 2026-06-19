@@ -15,6 +15,7 @@ import PlayerProfilePanel from "../components/PlayerProfilePanel";
 import PolandMap from "../components/PolandMap";
 import SplashScreen from "../components/SplashScreen";
 import SpecialBadgesPanel from "../components/SpecialBadgesPanel";
+import SettingsPanel from "../components/SettingsPanel";
 import TownsPanel from "../components/TownsPanel";
 import TripsPanel from "../components/TripsPanel";
 import VoivodeshipPanel from "../components/VoivodeshipPanel";
@@ -26,38 +27,18 @@ import { loadPlayer } from "../lib/playerService";
 import { usePlayerStats } from "../lib/usePlayerStats";
 import { useScreenWakeLock } from "../lib/useScreenWakeLock";
 
-type TabId =
-  | "map"
-  | "trips"
-  | "achievements"
-  | "garage"
-  | "profile"
-  | "notifications";
+type TabId = "map" | "profile" | "garage" | "tasks" | "ranking" | "settings" | "achievements" | "notifications";
 
 const tabs: Array<{
   id: TabId;
   label: string;
 }> = [
-  {
-    id: "map",
-    label: "Mapa",
-  },
-  {
-    id: "trips",
-    label: "Wyprawy",
-  },
-  {
-    id: "achievements",
-    label: "Odznaki",
-  },
-  {
-    id: "garage",
-    label: "Garaz",
-  },
-  {
-    id: "profile",
-    label: "Profil",
-  },
+  { id: "map", label: "Mapa" },
+  { id: "profile", label: "Profil" },
+  { id: "garage", label: "Garaz" },
+  { id: "tasks", label: "Zadania" },
+  { id: "ranking", label: "Ranking" },
+  { id: "settings", label: "Ustawienia" },
 ];
 
 export default function Home() {
@@ -148,9 +129,10 @@ export default function Home() {
           />
         )}
 
-        {activeTab === "trips" && (
+        {activeTab === "tasks" && (
           <section className="mq-screen space-y-3">
-            <ScreenHeader title="Wyprawy" />
+            <ScreenHeader title="Zadania" />
+            <CityMissionsPanel />
             <TripsPanel />
           </section>
         )}
@@ -166,7 +148,6 @@ export default function Home() {
             <div className="grid gap-3">
               <TownsPanel />
             </div>
-            <CityMissionsPanel />
           </section>
         )}
 
@@ -186,10 +167,22 @@ export default function Home() {
             <PlayerProfilePanel stats={stats} />
             <SpecialBadgesPanel />
             <XPBar xp={stats.xp} />
-            <div className="grid gap-3">
-              <CloudStatusPanel />
-              <LeaderboardPanel />
-            </div>
+            <CloudStatusPanel />
+            <button type="button" className="mq-panel-link" onClick={() => setActiveTab("achievements")}>Zobacz wszystkie osiagniecia</button>
+          </section>
+        )}
+
+        {activeTab === "ranking" && (
+          <section className="mq-screen space-y-3">
+            <ScreenHeader title="Ranking" />
+            <LeaderboardPanel />
+          </section>
+        )}
+
+        {activeTab === "settings" && (
+          <section className="mq-screen space-y-3">
+            <ScreenHeader title="Ustawienia" />
+            <SettingsPanel />
           </section>
         )}
 
@@ -301,7 +294,7 @@ function BottomNavigation({
         ].join(" ")}
       >
         <div className="mq-bottom-nav-inner">
-        <div className="mq-bottom-nav-grid grid grid-cols-5">
+        <div className="mq-bottom-nav-grid grid grid-cols-6">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
 
@@ -372,7 +365,7 @@ function NavIcon({ id }: { id: TabId }) {
     );
   }
 
-  if (id === "trips") {
+  if (id === "tasks") {
     return (
       <svg {...common}>
         <path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6z" />
@@ -385,7 +378,7 @@ function NavIcon({ id }: { id: TabId }) {
     );
   }
 
-  if (id === "achievements") {
+  if (id === "ranking") {
     return (
       <svg {...common}>
         <path d="M8 4h8v5a4 4 0 0 1-8 0V4z" />
@@ -405,6 +398,10 @@ function NavIcon({ id }: { id: TabId }) {
         <path d="M9 20v-6h6v6" />
       </svg>
     );
+  }
+
+  if (id === "settings") {
+    return <svg {...common}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" /></svg>;
   }
 
   return (
