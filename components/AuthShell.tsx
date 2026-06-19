@@ -20,7 +20,7 @@ export default function AuthShell({
         <h1 className="mq-auth-title">{title}</h1>
         <p className="mq-auth-subtitle">{subtitle}</p>
         {children}
-        <Link href="/" className="mq-auth-back">Wroc do mapy</Link>
+        <Link href="/#profile" className="mq-auth-back">Wroc do profilu</Link>
       </section>
     </main>
   );

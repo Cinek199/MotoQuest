@@ -21,7 +21,7 @@ export default function TownsPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  const latestTowns = useMemo(() => towns.slice(-3).reverse(), [towns]);
+  const latestTowns = useMemo(() => towns.slice(-1), [towns]);
   const nextMilestone = getNextMilestone(towns.length);
   const milestonePercent = Math.min(
     100,
@@ -84,7 +84,7 @@ export default function TownsPanel() {
         </div>
 
         {latestTowns.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2">
             {latestTowns.map((town) => (
               <div
                 key={`latest-${town}`}

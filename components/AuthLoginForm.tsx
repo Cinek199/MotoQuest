@@ -10,6 +10,7 @@ export default function AuthLoginForm() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberAccount, setRememberAccount] = useState(true);
   const router = useRouter();
 
   const oauth = async (provider: "apple" | "google") => {
@@ -50,6 +51,9 @@ export default function AuthLoginForm() {
       });
       if (error) throw new Error("Nieprawidlowy e-mail lub haslo.");
       if (data.user) await loadPlayer(data.user.id);
+      localStorage.setItem("mq_remember_account", rememberAccount ? "1" : "0");
+      if (rememberAccount) sessionStorage.removeItem("mq_session_only");
+      else sessionStorage.setItem("mq_session_only", "1");
       window.dispatchEvent(new Event("motoquest-progress-updated"));
       router.replace("/");
     } catch (error) {
@@ -81,6 +85,10 @@ export default function AuthLoginForm() {
       <button type="button" onClick={resetPassword} className="mq-auth-forgot">
         Nie pamietasz hasla?
       </button>
+      <label className="mq-auth-remember">
+        <input type="checkbox" checked={rememberAccount} onChange={(event) => setRememberAccount(event.target.checked)} />
+        <span>Nie wylogowuj mnie po zamknieciu aplikacji</span>
+      </label>
       <button type="submit" disabled={isLoading} className="mq-auth-primary">
         {isLoading ? "Logowanie..." : "Zaloguj sie"}
       </button>

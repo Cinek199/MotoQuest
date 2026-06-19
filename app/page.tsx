@@ -38,7 +38,6 @@ const tabs: Array<{
   { id: "garage", label: "Garaz" },
   { id: "tasks", label: "Zadania" },
   { id: "ranking", label: "Ranking" },
-  { id: "settings", label: "Ustawienia" },
 ];
 
 export default function Home() {
@@ -53,6 +52,13 @@ export default function Home() {
   useScreenWakeLock(!showSplash);
 
   useEffect(() => {
+    const requestedTab = window.location.hash.slice(1) as TabId;
+    const availableTabs: TabId[] = ["map", "profile", "garage", "tasks", "ranking", "settings", "achievements", "notifications"];
+    if (availableTabs.includes(requestedTab)) {
+      setActiveTab(requestedTab);
+      history.replaceState(null, "", window.location.pathname);
+    }
+
     async function init() {
       setLoadingStatus("Logowanie...");
       setProgress(25);
@@ -163,7 +169,7 @@ export default function Home() {
 
         {activeTab === "profile" && (
           <section className="mq-screen space-y-3">
-            <ScreenHeader title="Profil" action="gear" />
+            <ScreenHeader title="Profil" action="gear" onAction={() => setActiveTab("settings")} />
             <PlayerProfilePanel stats={stats} />
             <SpecialBadgesPanel />
             <XPBar xp={stats.xp} />
@@ -181,7 +187,7 @@ export default function Home() {
 
         {activeTab === "settings" && (
           <section className="mq-screen space-y-3">
-            <ScreenHeader title="Ustawienia" />
+            <ScreenHeader title="Ustawienia" back onAction={() => setActiveTab("profile")} />
             <SettingsPanel />
           </section>
         )}
@@ -201,17 +207,22 @@ export default function Home() {
 
 function ScreenHeader({
   action,
+  back,
+  onAction,
   title,
 }: {
   action?: "+" | "gear";
+  back?: boolean;
+  onAction?: () => void;
   title: string;
 }) {
   return (
     <header className="grid h-14 grid-cols-[44px_1fr_44px] items-center">
       <button
         type="button"
-        aria-label="Menu"
-        className="flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300"
+        aria-label={back ? "Wroc" : "Menu"}
+        onClick={back ? onAction : undefined}
+        className={["flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300", back ? "mq-screen-back" : ""].join(" ")}
       >
         <span className="text-2xl leading-none">≡</span>
       </button>
@@ -222,13 +233,14 @@ function ScreenHeader({
 
       <button
         type="button"
-        aria-label="Akcja"
+        aria-label={action === "gear" ? "Ustawienia" : "Akcja"}
+        onClick={onAction}
         className="flex h-10 w-10 items-center justify-center rounded-2xl text-orange-500"
       >
         {action === "+" ? (
           <span className="text-2xl leading-none">+</span>
         ) : action === "gear" ? (
-          <span className="h-5 w-5 rounded-full border-2 border-current" />
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/><circle cx="12" cy="12" r="7"/></svg>
         ) : (
           <span />
         )}
@@ -294,7 +306,7 @@ function BottomNavigation({
         ].join(" ")}
       >
         <div className="mq-bottom-nav-inner">
-        <div className="mq-bottom-nav-grid grid grid-cols-6">
+        <div className="mq-bottom-nav-grid grid grid-cols-5">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
 

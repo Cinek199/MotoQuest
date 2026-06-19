@@ -14,6 +14,8 @@ type PlayerProgress = {
   distance_km: number;
   xp: number;
   level: number;
+  garage: unknown[];
+  active_bike_id: string | null;
 };
 
 function readJson<T>(key: string, fallback: T): T {
@@ -94,6 +96,8 @@ function calculateProgress(
     distance_km: distanceKm,
     xp: calculatedXp,
     level: calculatedLevel,
+    garage: [],
+    active_bike_id: null,
   };
 }
 
@@ -104,7 +108,11 @@ function getLocalProgress(): PlayerProgress {
   const trips = readJson<unknown[]>("mq_trips", []);
   const distanceKm = Number(localStorage.getItem("mq_distance") || "0");
 
-  return calculateProgress(tiles, towns, achievements, distanceKm, trips);
+  return {
+    ...calculateProgress(tiles, towns, achievements, distanceKm, trips),
+    garage: readJson<unknown[]>("mq_garage", []),
+    active_bike_id: localStorage.getItem("mq_active_bike_id"),
+  };
 }
 
 function saveLocalProgress(progress: PlayerProgress) {
@@ -113,6 +121,10 @@ function saveLocalProgress(progress: PlayerProgress) {
   writeJson("mq_achievements", progress.achievements);
   writeJson("mq_trips", progress.trips);
   localStorage.setItem("mq_distance", String(progress.distance_km));
+  writeJson("mq_garage", progress.garage || []);
+  if (progress.active_bike_id) {
+    localStorage.setItem("mq_active_bike_id", progress.active_bike_id);
+  }
 }
 
 export function mergeProgress(
@@ -139,6 +151,8 @@ export function mergeProgress(
 
   return {
     ...recalculated,
+    garage: mergeArrayUnique(local.garage || [], cloud.garage || []),
+    active_bike_id: local.active_bike_id || cloud.active_bike_id || null,
     xp: Math.max(recalculated.xp, Number(local.xp || 0), Number(cloud.xp || 0)),
     level: Math.max(
       recalculated.level,
@@ -159,6 +173,8 @@ async function saveProgressToCloud(userId: string, progress: PlayerProgress) {
       distance_km: progress.distance_km,
       xp: progress.xp,
       level: progress.level,
+      garage: progress.garage,
+      active_bike_id: progress.active_bike_id,
       updated_at: new Date().toISOString(),
     },
     {
@@ -181,7 +197,7 @@ export async function savePlayer(userId: string) {
 export async function loadPlayer(userId: string) {
   const { data, error } = await supabase
     .from("player_progress")
-    .select("tiles, towns, achievements, trips, distance_km, xp, level")
+    .select("tiles, towns, achievements, trips, distance_km, xp, level, garage, active_bike_id")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -205,6 +221,8 @@ export async function loadPlayer(userId: string) {
     distance_km: Number(data.distance_km || 0),
     xp: Number(data.xp || 0),
     level: Number(data.level || 1),
+    garage: Array.isArray(data.garage) ? data.garage : [],
+    active_bike_id: typeof data.active_bike_id === "string" ? data.active_bike_id : null,
   };
 
   const mergedProgress = mergeProgress(localProgress, cloudProgress);

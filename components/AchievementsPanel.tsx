@@ -108,6 +108,7 @@ const GOALS: AchievementGoal[] = [
 ];
 
 export default function AchievementsPanel() {
+  const [activeFilter, setActiveFilter] = useState("Wszystkie");
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [progress, setProgress] = useState({
     areaKm2: 0,
@@ -153,11 +154,18 @@ export default function AchievementsPanel() {
     return unlockedIds.has(goal.id) || getGoalValue(goal, progress) >= goal.target;
   }).length;
   const overallPercent = Math.round((completedGoals / GOALS.length) * 100);
+  const visibleGoals = GOALS.filter((goal) => {
+    const unlocked = unlockedIds.has(goal.id) || getGoalValue(goal, progress) >= goal.target;
+    if (activeFilter === "Odkryte") return unlocked;
+    if (activeFilter === "Trasy") return goal.id.startsWith("trip-") || goal.id.startsWith("distance-");
+    if (activeFilter === "Wyzwania") return !unlocked && !goal.id.startsWith("trip-");
+    return true;
+  });
 
   return (
     <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
       <div className="space-y-3 p-3 sm:p-4">
-        <SegmentedTabs labels={["Wszystkie", "Odkryte", "Wyzwania", "Trasy"]} />
+        <SegmentedTabs active={activeFilter} labels={["Wszystkie", "Odkryte", "Wyzwania", "Trasy"]} onChange={setActiveFilter} />
 
         <div className="grid grid-cols-3 gap-2">
           <SummaryCard label="Zdobyte" value={String(achievements.length)} />
@@ -175,7 +183,7 @@ export default function AchievementsPanel() {
         </div>
 
         <div className="space-y-2">
-          {GOALS.map((goal, index) => {
+          {visibleGoals.map((goal, index) => {
             const value = getGoalValue(goal, progress);
             const unlocked = unlockedIds.has(goal.id) || value >= goal.target;
             const percent = Math.min(100, Math.round((value / goal.target) * 100));
@@ -191,22 +199,28 @@ export default function AchievementsPanel() {
               />
             );
           })}
+          {visibleGoals.length === 0 && (
+            <div className="rounded-xl border border-white/10 bg-black/40 p-8 text-center text-sm font-bold text-zinc-500">
+              Brak osiagniec w tej kategorii.
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function SegmentedTabs({ labels }: { labels: string[] }) {
+function SegmentedTabs({ active, labels, onChange }: { active: string; labels: string[]; onChange: (label: string) => void }) {
   return (
     <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-black/45 p-1">
       {labels.map((label, index) => (
         <button
           key={label}
           type="button"
+          onClick={() => onChange(label)}
           className={[
             "min-h-10 rounded-xl px-1 text-[10px] font-black transition",
-            index === 0
+            active === label
               ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
               : "text-zinc-400 hover:text-white",
           ].join(" ")}

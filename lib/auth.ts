@@ -1,6 +1,13 @@
 import { supabase } from "./supabase";
 
 export async function signInAnonymously() {
+  const rememberAccount = localStorage.getItem("mq_remember_account") !== "0";
+  const sessionOnlyActive = sessionStorage.getItem("mq_session_only") === "1";
+
+  if (!rememberAccount && !sessionOnlyActive) {
+    await supabase.auth.signOut();
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

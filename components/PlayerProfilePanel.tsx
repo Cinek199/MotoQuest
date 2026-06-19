@@ -335,29 +335,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
           </div>
         </div>
 
-        <div className="mt-3 rounded-[1.35rem] border border-white/10 bg-black/45 p-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-            Nick
-          </label>
-          <div className="mt-2 grid gap-2">
-            <input
-              value={nickname}
-              onChange={(event) => setNickname(event.target.value)}
-              className="min-h-12 rounded-2xl border border-white/10 bg-zinc-950 px-4 font-bold outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
-            />
-            <button
-              type="button"
-              onClick={saveNickname}
-              className="min-h-12 rounded-2xl bg-orange-500 font-black text-black transition hover:bg-orange-400"
-            >
-              Zapisz
-            </button>
-          </div>
-
-          {status && (
-            <div className="mt-2 text-sm font-bold text-orange-400">{status}</div>
-          )}
-        </div>
+        {status && <div className="mt-3 text-sm font-bold text-orange-400">{status}</div>}
       </div>
     </section>
   );
