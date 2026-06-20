@@ -18,7 +18,6 @@ import SpecialBadgesPanel from "../components/SpecialBadgesPanel";
 import SettingsPanel from "../components/SettingsPanel";
 import TownsPanel from "../components/TownsPanel";
 import TripsPanel from "../components/TripsPanel";
-import VoivodeshipPanel from "../components/VoivodeshipPanel";
 import XPBar from "../components/XPBar";
 
 import { signInAnonymously } from "../lib/auth";
@@ -27,13 +26,14 @@ import { loadPlayer } from "../lib/playerService";
 import { usePlayerStats } from "../lib/usePlayerStats";
 import { useScreenWakeLock } from "../lib/useScreenWakeLock";
 
-type TabId = "map" | "profile" | "garage" | "tasks" | "ranking" | "settings" | "achievements" | "notifications";
+type TabId = "map" | "trips" | "profile" | "garage" | "tasks" | "ranking" | "settings" | "achievements" | "notifications";
 
 const tabs: Array<{
   id: TabId;
   label: string;
 }> = [
   { id: "map", label: "Mapa" },
+  { id: "trips", label: "Wyprawy" },
   { id: "profile", label: "Profil" },
   { id: "garage", label: "Garaz" },
   { id: "tasks", label: "Zadania" },
@@ -53,7 +53,7 @@ export default function Home() {
 
   useEffect(() => {
     const requestedTab = window.location.hash.slice(1) as TabId;
-    const availableTabs: TabId[] = ["map", "profile", "garage", "tasks", "ranking", "settings", "achievements", "notifications"];
+    const availableTabs: TabId[] = ["map", "trips", "profile", "garage", "tasks", "ranking", "settings", "achievements", "notifications"];
     if (availableTabs.includes(requestedTab)) {
       setActiveTab(requestedTab);
       history.replaceState(null, "", window.location.pathname);
@@ -139,6 +139,12 @@ export default function Home() {
           <section className="mq-screen space-y-3">
             <ScreenHeader title="Zadania" />
             <CityMissionsPanel />
+          </section>
+        )}
+
+        {activeTab === "trips" && (
+          <section className="mq-screen space-y-3">
+            <ScreenHeader title="Wyprawy" />
             <TripsPanel />
           </section>
         )}
@@ -146,20 +152,15 @@ export default function Home() {
         {activeTab === "achievements" && (
           <section className="mq-screen space-y-3">
             <ScreenHeader title="Odznaki" />
-            <AchievementsPanel />
-            <div className="grid gap-3">
-              <PolandMap />
-              <VoivodeshipPanel />
-            </div>
-            <div className="grid gap-3">
-              <TownsPanel />
-            </div>
+            <CollapsibleSection title="Osiagniecia i wyzwania"><AchievementsPanel /></CollapsibleSection>
+            <CollapsibleSection title="Mapa Polski"><PolandMap /></CollapsibleSection>
+            <CollapsibleSection title="Odkrycia miejscowosci"><TownsPanel /></CollapsibleSection>
           </section>
         )}
 
         {activeTab === "garage" && (
           <section className="mq-screen space-y-3">
-            <ScreenHeader title="Garaz" action="+" />
+            <ScreenHeader title="Garaz" />
             <div className="grid gap-3">
               <GaragePanel />
               <BikeProfilePanel />
@@ -306,7 +307,7 @@ function BottomNavigation({
         ].join(" ")}
       >
         <div className="mq-bottom-nav-inner">
-        <div className="mq-bottom-nav-grid grid grid-cols-5">
+        <div className="mq-bottom-nav-grid grid grid-cols-6">
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
 
@@ -390,6 +391,17 @@ function NavIcon({ id }: { id: TabId }) {
     );
   }
 
+  if (id === "trips") {
+    return (
+      <svg {...common}>
+        <path d="M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2V6z" />
+        <path d="M9 4v14M15 6v14" />
+        <circle cx="7" cy="10" r="1" />
+        <circle cx="17" cy="14" r="1" />
+      </svg>
+    );
+  }
+
   if (id === "ranking") {
     return (
       <svg {...common}>
@@ -421,5 +433,18 @@ function NavIcon({ id }: { id: TabId }) {
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21a8 8 0 0 1 16 0" />
     </svg>
+  );
+}
+
+function CollapsibleSection({ children, title }: { children: React.ReactNode; title: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="mq-collapsible">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        <span>{title}</span><b>{open ? "−" : "+"}</b>
+      </button>
+      {open && <div className="mq-collapsible-content">{children}</div>}
+    </section>
   );
 }

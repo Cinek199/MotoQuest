@@ -100,7 +100,8 @@ export default function CityMissionsPanel() {
       const { data, error } = await supabase
         .from("mq_cities")
         .select("*")
-        .order("required_missions");
+        .order("voivodeship")
+        .order("name");
 
       if (error) {
         setStatus("Uruchom migracje V5 w Supabase SQL Editor.");
@@ -210,7 +211,7 @@ export default function CityMissionsPanel() {
         >
           {cities.map((city) => (
             <option key={city.id} value={city.id}>
-              {city.name}
+              {city.voivodeship ? `${city.voivodeship} - ` : ""}{city.name}
             </option>
           ))}
         </select>
@@ -264,7 +265,7 @@ export default function CityMissionsPanel() {
         </div>
       )}
 
-      {status && <div className="text-sm font-bold text-orange-300">{status}</div>}
+      {status && <div className="mq-mission-status" role="status">{status}</div>}
     </section>
   );
 }
@@ -283,7 +284,7 @@ function MissionRow({
   return (
     <article className="grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3">
       <div className="grid h-11 w-11 place-items-center rounded-lg border border-orange-500/25 bg-orange-500/10 text-xs font-black text-orange-400">
-        {mission.mission_type === "motoshot" ? "MOTO" : mission.photo_required ? "FOTO" : "GPS"}
+        <MissionIcon type={mission.mission_type} />
       </div>
       <div className="min-w-0">
         <div className="truncate text-sm font-black text-white">{mission.title}</div>
@@ -319,4 +320,13 @@ function MissionRow({
       )}
     </article>
   );
+}
+
+function MissionIcon({ type }: { type: CityMission["mission_type"] }) {
+  const common={viewBox:"0 0 24 24",className:"h-6 w-6",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round" as const,strokeLinejoin:"round" as const};
+  if(type==="photo") return <svg {...common}><rect x="3" y="6" width="18" height="14" rx="2"/><path d="m8 6 2-3h4l2 3"/><circle cx="12" cy="13" r="3"/></svg>;
+  if(type==="motoshot") return <svg {...common}><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-6H8l-2 3m9-3h3l2 3M10 7h4"/></svg>;
+  if(type==="ride") return <svg {...common}><path d="M5 19c4-8 6-3 9-10 1-2 3-3 5-4"/><path d="m16 5 3 0 0 3"/><circle cx="5" cy="19" r="2"/></svg>;
+  if(type==="poi") return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;
+  return <svg {...common}><path d="M3 11 12 4l9 7-9 9-9-9Z"/><path d="M8 12h8M12 8v8"/></svg>;
 }

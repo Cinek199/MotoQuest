@@ -56,6 +56,9 @@ export default function MapView({
     y: 0,
   });
   const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [fogEnabled, setFogEnabled] = useState(true);
+  const [labelsEnabled, setLabelsEnabled] = useState(true);
+  const [boundaryEnabled, setBoundaryEnabled] = useState(true);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
 
   const addTileLayer = useCallback((map: maplibregl.Map, tileId: string) => {
@@ -158,6 +161,7 @@ export default function MapView({
     }
 
     let fogSyncFrame = 0;
+    let lastFogSync = 0;
 
     const disableFollowMode = (event: maplibregl.MapLibreEvent) => {
       if (suppressMapInteractionRef.current) {
@@ -177,6 +181,9 @@ export default function MapView({
 
       fogSyncFrame = window.requestAnimationFrame(() => {
         fogSyncFrame = 0;
+        const now = performance.now();
+        if (now - lastFogSync < 90) return;
+        lastFogSync = now;
         updateFogOverlay(
           map,
           discoveredTileIdsRef.current,
@@ -318,6 +325,13 @@ export default function MapView({
     map?.zoomOut();
   };
 
+  const toggleLabels = () => {
+    if (!map) return;
+    const next = !labelsEnabled;
+    map.getStyle().layers?.filter((layer) => layer.type === "symbol").forEach((layer) => map.setLayoutProperty(layer.id, "visibility", next ? "visible" : "none"));
+    setLabelsEnabled(next);
+  };
+
   const stopActiveTrip = async () => {
     const result = finishActiveTrip();
 
@@ -351,11 +365,12 @@ export default function MapView({
         className="mq-map-canvas w-full"
       />
 
-      <MapFogOverlay
+      {fogEnabled && <MapFogOverlay
         boundaryEdges={fogBoundaryEdges}
         revealTiles={fogRevealTiles}
         textureOffset={fogTextureOffset}
-      />
+        showBoundary={boundaryEnabled}
+      />}
 
       <MapHud
         activeTrip={activeTrip}
@@ -364,12 +379,18 @@ export default function MapView({
         distanceKm={distanceKm}
         hasUnreadNotifications={hasUnreadNotifications}
         isFollowingUser={isFollowingUser}
+        fogEnabled={fogEnabled}
+        labelsEnabled={labelsEnabled}
+        boundaryEnabled={boundaryEnabled}
         onCenterUser={centerOnUser}
         onEnterPictureInPicture={
           isNativeAndroid() ? enterPictureInPicture : undefined
         }
         onOpenNotifications={onOpenNotifications}
         onStopRecording={stopActiveTrip}
+        onToggleFog={() => setFogEnabled((value) => !value)}
+        onToggleLabels={toggleLabels}
+        onToggleBoundary={() => setBoundaryEnabled((value) => !value)}
         tilesCount={tilesCount}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
@@ -557,10 +578,12 @@ function MapFogOverlay({
   boundaryEdges,
   revealTiles,
   textureOffset,
+  showBoundary,
 }: {
   boundaryEdges: FogBoundaryEdge[];
   revealTiles: FogRevealTile[];
   textureOffset: FogTextureOffset;
+  showBoundary: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [fogTexture, setFogTexture] = useState<HTMLImageElement | null>(null);
@@ -580,7 +603,8 @@ function MapFogOverlay({
     }
 
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const lowPower = (navigator.hardwareConcurrency || 4) <= 4 || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4) <= 3;
+    const dpr = lowPower ? 0.75 : Math.min(1.25, window.devicePixelRatio || 1);
     const width = Math.max(1, rect.width);
     const height = Math.max(1, rect.height);
 
@@ -597,7 +621,7 @@ function MapFogOverlay({
     let lastPaint = 0;
 
     const paint = (time: number) => {
-      if (time - lastPaint < 120) {
+      if (time - lastPaint < (lowPower ? 280 : 140)) {
         animationFrame = window.requestAnimationFrame(paint);
         return;
       }
@@ -609,7 +633,7 @@ function MapFogOverlay({
         width,
         height,
         revealTiles,
-        boundaryEdges,
+        showBoundary ? boundaryEdges : [],
         textureOffset,
         time
       );
@@ -620,7 +644,7 @@ function MapFogOverlay({
     animationFrame = window.requestAnimationFrame(paint);
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [boundaryEdges, fogTexture, revealTiles, textureOffset]);
+  }, [boundaryEdges, fogTexture, revealTiles, showBoundary, textureOffset]);
 
   return (
     <canvas

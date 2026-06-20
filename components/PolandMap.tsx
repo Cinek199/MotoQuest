@@ -2,162 +2,47 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const HEX_MAP = [
-  ["Zachodniopomorskie", "Pomorskie", "Warminsko-Mazurskie"],
-  ["Lubuskie", "Wielkopolskie", "Kujawsko-Pomorskie", "Podlaskie"],
-  ["Dolnoslaskie", "Opolskie", "Lodzkie", "Mazowieckie"],
-  ["Slaskie", "Swietokrzyskie", "Lubelskie"],
-  ["Malopolskie", "Podkarpackie"],
+type Region = { name: string; slug: string; points: string; x: number; y: number; w: number; h: number };
+
+const REGIONS: Region[] = [
+  {name:"Zachodniopomorskie",slug:"zachodniopomorskie",points:"25,65 92,48 132,82 116,142 45,151 18,110",x:18,y:48,w:114,h:103},
+  {name:"Pomorskie",slug:"pomorskie",points:"92,48 177,24 232,55 220,112 132,82",x:92,y:24,w:140,h:88},
+  {name:"Warminsko-Mazurskie",slug:"warminsko-mazurskie",points:"232,55 330,66 373,112 326,151 220,112",x:220,y:55,w:153,h:96},
+  {name:"Lubuskie",slug:"lubuskie",points:"18,110 45,151 50,232 15,252 4,180",x:4,y:110,w:46,h:142},
+  {name:"Wielkopolskie",slug:"wielkopolskie",points:"45,151 116,142 184,164 176,249 95,267 50,232",x:45,y:142,w:139,h:125},
+  {name:"Kujawsko-Pomorskie",slug:"kujawsko-pomorskie",points:"132,82 220,112 238,174 184,164 116,142",x:116,y:82,w:122,h:92},
+  {name:"Podlaskie",slug:"podlaskie",points:"326,151 373,112 394,190 373,258 326,245",x:326,y:112,w:68,h:146},
+  {name:"Dolnoslaskie",slug:"dolnoslaskie",points:"15,252 50,232 95,267 118,318 70,350 20,323",x:15,y:232,w:103,h:118},
+  {name:"Opolskie",slug:"opolskie",points:"95,267 150,278 160,332 118,345 118,318",x:95,y:267,w:65,h:78},
+  {name:"Lodzkie",slug:"lodzkie",points:"184,164 238,174 258,248 217,290 176,249",x:176,y:164,w:82,h:126},
+  {name:"Mazowieckie",slug:"mazowieckie",points:"238,174 326,151 326,245 302,299 258,248",x:238,y:151,w:88,h:148},
+  {name:"Slaskie",slug:"slaskie",points:"150,278 217,290 205,361 160,372 160,332",x:150,y:278,w:67,h:94},
+  {name:"Swietokrzyskie",slug:"swietokrzyskie",points:"217,290 258,248 302,299 268,342 205,361",x:205,y:248,w:97,h:113},
+  {name:"Lubelskie",slug:"lubelskie",points:"326,245 373,258 387,340 330,374 268,342 302,299",x:268,y:245,w:119,h:129},
+  {name:"Malopolskie",slug:"malopolskie",points:"160,372 205,361 268,342 278,392 218,414 164,402",x:160,y:342,w:118,h:72},
+  {name:"Podkarpackie",slug:"podkarpackie",points:"268,342 330,374 346,417 278,392",x:268,y:342,w:78,h:75},
 ];
 
 export default function PolandMap() {
   const [discovered, setDiscovered] = useState<string[]>([]);
-  const [selectedVoivodeship, setSelectedVoivodeship] = useState<string | null>(
-    null
-  );
-
-  useEffect(() => {
-    const loadVoivodeships = () => {
-      try {
-        setDiscovered(JSON.parse(localStorage.getItem("mq_voivodeships") || "[]"));
-      } catch {
-        setDiscovered([]);
-      }
-    };
-
-    loadVoivodeships();
-    window.addEventListener("mq-voivodeships-updated", loadVoivodeships);
-
-    return () => {
-      window.removeEventListener("mq-voivodeships-updated", loadVoivodeships);
-    };
-  }, []);
-
-  const discoveredKeys = useMemo(() => {
-    return new Set(discovered.map(normalizeName));
-  }, [discovered]);
-  const discoveredCount = HEX_MAP.flat().filter((voivodeship) => {
-    return discoveredKeys.has(normalizeName(voivodeship));
-  }).length;
-  const percent = Math.round((discoveredCount / 16) * 100);
-  const selectedUnlocked = selectedVoivodeship
-    ? discoveredKeys.has(normalizeName(selectedVoivodeship))
-    : false;
-
-  return (
-    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#08090b] p-5 shadow-2xl shadow-black/50">
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.36em] text-orange-500">
-            Mapa Polski
-          </div>
-          <h2 className="mt-1 text-2xl font-black text-white">Hex odkryc</h2>
-        </div>
-
-        <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-right">
-          <div className="text-2xl font-black text-orange-400">{percent}%</div>
-          <div className="text-[10px] font-black uppercase text-zinc-500">
-            kraju
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 h-3 overflow-hidden rounded-full bg-zinc-900">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-lime-400 transition-all"
-          style={{
-            width: `${percent}%`,
-          }}
-        />
-      </div>
-
-      <div className="flex flex-col items-center gap-2 overflow-x-auto pb-1">
-        {HEX_MAP.map((row, rowIndex) => (
-          <div
-            key={row.join("-")}
-            className={`flex gap-2 ${rowIndex % 2 ? "ml-10" : ""}`}
-          >
-            {row.map((voivodeship) => {
-              const unlocked = discoveredKeys.has(normalizeName(voivodeship));
-
-              return (
-                <button
-                  key={voivodeship}
-                  type="button"
-                  onClick={() => setSelectedVoivodeship(voivodeship)}
-                  title={voivodeship}
-                  className={[
-                    "relative flex h-20 w-20 items-center justify-center px-2 text-center text-[10px] font-black transition hover:scale-105",
-                    unlocked ? "text-black" : "text-zinc-500",
-                  ].join(" ")}
-                  style={{
-                    background: unlocked ? "#f97316" : "#27272a",
-                    clipPath:
-                      "polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%)",
-                  }}
-                >
-                  {shortenName(voivodeship)}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 text-center text-sm font-bold text-zinc-400">
-        Odkryto{" "}
-        <span className="font-black text-orange-400">{discoveredCount}</span> z
-        16 wojewodztw
-      </div>
-
-      {selectedVoivodeship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur">
-          <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-zinc-950 p-6 shadow-2xl">
-            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-500">
-              Wojewodztwo
-            </div>
-            <h3 className="mt-2 text-3xl font-black text-white">
-              {selectedVoivodeship}
-            </h3>
-
-            <div
-              className={[
-                "mt-5 rounded-2xl border px-4 py-3 font-black",
-                selectedUnlocked
-                  ? "border-green-500/30 bg-green-500/10 text-green-300"
-                  : "border-white/10 bg-black/45 text-zinc-400",
-              ].join(" ")}
-            >
-              {selectedUnlocked ? "Odkryte" : "Nieodkryte"}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setSelectedVoivodeship(null)}
-              className="mt-5 w-full rounded-2xl bg-orange-500 py-3 font-black text-black transition hover:bg-orange-400"
-            >
-              Zamknij
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [selected, setSelected] = useState<Region | null>(null);
+  useEffect(() => { const load=()=>{try{setDiscovered(JSON.parse(localStorage.getItem("mq_voivodeships")||"[]"));setCounts(JSON.parse(localStorage.getItem("mq_voivodeship_tiles")||"{}"));}catch{}};load();window.addEventListener("mq-voivodeships-updated",load);window.addEventListener("storage",load);return()=>{window.removeEventListener("mq-voivodeships-updated",load);window.removeEventListener("storage",load);};},[]);
+  const discoveredKeys=useMemo(()=>new Set(discovered.map(normalize)),[discovered]);
+  const percentFor=(region:Region)=>Math.min(100,Math.max(discoveredKeys.has(normalize(region.name))?3:0,Math.round((counts[region.slug]||0)/4)));
+  const countryPercent=Math.round(REGIONS.reduce((sum,region)=>sum+percentFor(region),0)/16);
+  return <div className="mq-poland-map">
+    <header><div><small>POSTEP KRAJU</small><h2>Odkryta Polska</h2><p>Herby wojewodztw ujawniaja sie wraz z postepem.</p></div><b>{countryPercent}%</b></header>
+    <svg viewBox="0 0 400 430" role="img" aria-label="Mapa wojewodztw Polski">
+      <defs>{REGIONS.map((r)=><clipPath id={`clip-${r.slug}`} key={r.slug}><polygon points={r.points}/></clipPath>)}</defs>
+      {REGIONS.map((region)=>{const percent=percentFor(region);return <g key={region.slug} onClick={()=>setSelected(region)} className="mq-polish-region">
+        <polygon points={region.points} fill="#121316" stroke="#4a4d54" strokeWidth="2"/>
+        <image href={`/voivodeships/${region.slug}.svg`} x={region.x} y={region.y} width={region.w} height={region.h} preserveAspectRatio="xMidYMid meet" clipPath={`url(#clip-${region.slug})`} opacity={percent/100}/>
+        <polygon points={region.points} fill="none" stroke={percent>0?"#ff7900":"#4a4d54"} strokeWidth={percent>0?3:2}/>
+      </g>;})}
+    </svg>
+    {selected&&<div className="mq-region-detail"><div><img src={`/voivodeships/${selected.slug}.svg`} alt=""/><span><b>{selected.name}</b><small>Odkryto {percentFor(selected)}%</small></span></div><button onClick={()=>setSelected(null)}>Zamknij</button></div>}
+  </div>;
 }
 
-function normalizeName(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ł/gi, "l")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
-}
-
-function shortenName(value: string) {
-  return value
-    .replace("Warminsko-", "Warm. ")
-    .replace("Kujawsko-", "Kuj. ")
-    .replace("Zachodniopomorskie", "Zach. Pom.")
-    .replace("Swietokrzyskie", "Swietokr.");
-}
+function normalize(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");}

@@ -71,7 +71,7 @@ export default function SettingsPanel() {
         <Link href="/login" className="mq-setting-link">Zaloguj sie lub zmien konto</Link>
         <button type="button" className="mq-setting-link danger" onClick={async () => { await supabase.auth.signOut(); location.href = "/login"; }}>Wyloguj sie</button>
       </div>
-      <div className="mq-settings-version">MotoQuest 1.3</div>
+      <div className="mq-settings-version">MotoQuest 1.4</div>
     </div>
   );
 }

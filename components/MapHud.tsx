@@ -17,10 +17,16 @@ type MapHudProps = {
   distanceKm: number;
   hasUnreadNotifications: boolean;
   isFollowingUser: boolean;
+  fogEnabled: boolean;
+  labelsEnabled: boolean;
+  boundaryEnabled: boolean;
   onCenterUser?: () => void;
   onEnterPictureInPicture?: () => void;
   onOpenNotifications: () => void;
   onStopRecording?: () => void;
+  onToggleFog: () => void;
+  onToggleLabels: () => void;
+  onToggleBoundary: () => void;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   tilesCount: number;
@@ -33,10 +39,16 @@ export default function MapHud({
   distanceKm,
   hasUnreadNotifications,
   isFollowingUser,
+  fogEnabled,
+  labelsEnabled,
+  boundaryEnabled,
   onCenterUser,
   onEnterPictureInPicture,
   onOpenNotifications,
   onStopRecording,
+  onToggleFog,
+  onToggleLabels,
+  onToggleBoundary,
   onZoomIn,
   onZoomOut,
   tilesCount,
@@ -45,6 +57,7 @@ export default function MapHud({
     avatarUrl: "",
     nickname: "MotoManiak",
   }));
+  const [layersOpen, setLayersOpen] = useState(false);
   const explorationLevel = Math.min(100, getPolandDiscoveryPercent(tilesCount));
   const explorationPercent = formatDiscoveryPercent(tilesCount);
   const explorationWidth = explorationLevel > 0 ? Math.max(3, explorationLevel) : 0;
@@ -142,6 +155,7 @@ export default function MapHud({
       </div>
 
       <div className="mq-map-controls pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
+        <HudRoundButton ariaLabel="Warstwy mapy" onClick={() => setLayersOpen((value) => !value)}><LayersIcon /></HudRoundButton>
         <HudRoundButton active={gpsReady} label="GPS" sublabel={gpsReady ? "ON" : "..."} />
         <HudRoundButton
           ariaLabel="Wycentruj mape na aktualnej pozycji"
@@ -164,6 +178,13 @@ export default function MapHud({
           <HudZoomButton label="-" onClick={onZoomOut} />
         </div>
       </div>
+
+      {layersOpen && <div className="mq-map-layers">
+        <div className="mq-map-layers-head"><b>Warstwy mapy</b><button onClick={() => setLayersOpen(false)}>×</button></div>
+        <LayerToggle title="Mgla odkrycia" subtitle="Ukrywa nieodkryty teren" active={fogEnabled} onClick={onToggleFog}/>
+        <LayerToggle title="Nazwy i drogi" subtitle="Etykiety podkladu mapy" active={labelsEnabled} onClick={onToggleLabels}/>
+        <LayerToggle title="Granice odkryc" subtitle="Pomarańczowy obrys terenu" active={boundaryEnabled} onClick={onToggleBoundary}/>
+      </div>}
 
       {activeTrip && (
         <div className="mq-recording-panel pointer-events-none absolute inset-x-5 bottom-3 z-20">
@@ -201,6 +222,12 @@ export default function MapHud({
     </>
   );
 }
+
+function LayerToggle({active,onClick,subtitle,title}:{active:boolean;onClick:()=>void;subtitle:string;title:string}) {
+  return <button type="button" className="mq-layer-toggle" onClick={onClick}><span><b>{title}</b><small>{subtitle}</small></span><i className={active?"is-on":""}><em/></i></button>;
+}
+
+function LayersIcon(){return <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg>}
 
 function HudRoundButton({
   ariaLabel,

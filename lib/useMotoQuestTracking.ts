@@ -54,6 +54,7 @@ export function useMotoQuestTracking({
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const markerHeadingRef = useRef(0);
   const compassFrameRef = useRef<number | null>(null);
+  const markerAnimationRef = useRef<number | null>(null);
   const userIdRef = useRef("");
   const lastPositionRef = useRef<Position | null>(null);
   const shouldFollowUserRef = useRef(shouldFollowUser);
@@ -161,6 +162,7 @@ export function useMotoQuestTracking({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleVisibilityChange);
       cleanupCompass();
+      if (markerAnimationRef.current !== null) window.cancelAnimationFrame(markerAnimationRef.current);
     };
   }, [addTileLayer, map]);
 
@@ -171,6 +173,10 @@ export function useMotoQuestTracking({
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
     const nextPosition = { lat, lon };
+
+    if (lastPositionRef.current && (position.coords.accuracy ?? 0) > 120) {
+      return;
+    }
 
     setCurrentPosition(nextPosition);
     updateMarkerHeading(nextPosition, position.coords);
@@ -219,7 +225,7 @@ export function useMotoQuestTracking({
       }
     }
 
-    const tileChanged = discoverTile(lat, lon, map);
+    const tileChanged = discoverTile(lat, lon, map, voivodeship);
 
     if ((progressChanged || tileChanged) && userIdRef.current) {
       await savePlayer(userIdRef.current);
@@ -343,10 +349,12 @@ export function useMotoQuestTracking({
 
   function updateMapPosition(map: maplibregl.Map, position: Position) {
     if (shouldFollowUserRef.current) {
-      map.flyTo({
+      map.easeTo({
         center: [position.lon, position.lat],
-        zoom: 15,
-        duration: 500,
+        bearing: markerHeadingRef.current,
+        zoom: Math.max(15, map.getZoom()),
+        duration: 950,
+        easing: (value) => value * value * (3 - 2 * value),
       });
     }
 
@@ -361,8 +369,27 @@ export function useMotoQuestTracking({
       return;
     }
 
-    markerRef.current.setLngLat([position.lon, position.lat]);
+    animateMarker(position);
     applyUserMarkerHeading(markerRef.current.getElement(), getDisplayHeading(map));
+  }
+
+  function animateMarker(position: Position) {
+    if (!markerRef.current) return;
+    if (markerAnimationRef.current !== null) window.cancelAnimationFrame(markerAnimationRef.current);
+    const start = markerRef.current.getLngLat();
+    const startedAt = performance.now();
+    const duration = 900;
+    const frame = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = progress * progress * (3 - 2 * progress);
+      markerRef.current?.setLngLat([
+        start.lng + (position.lon - start.lng) * eased,
+        start.lat + (position.lat - start.lat) * eased,
+      ]);
+      if (progress < 1) markerAnimationRef.current = window.requestAnimationFrame(frame);
+      else markerAnimationRef.current = null;
+    };
+    markerAnimationRef.current = window.requestAnimationFrame(frame);
   }
 
   function setupCompassHeading(map: maplibregl.Map) {
@@ -495,7 +522,7 @@ export function useMotoQuestTracking({
     );
   }
 
-  function discoverTile(lat: number, lon: number, map: maplibregl.Map) {
+  function discoverTile(lat: number, lon: number, map: maplibregl.Map, voivodeship?: string) {
     const tileId = getTileId(lat, lon);
 
     if (discoveredTilesRef.current.has(tileId)) {
@@ -506,6 +533,14 @@ export function useMotoQuestTracking({
     setJson(STORAGE_KEYS.tiles, [...discoveredTilesRef.current]);
     setTilesCount(discoveredTilesRef.current.size);
     addTileLayer(map, tileId);
+
+    if (voivodeship && voivodeship !== "Nieznane") {
+      const slug = voivodeship.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const counts = getJson<Record<string, number>>(STORAGE_KEYS.voivodeshipTiles, {});
+      counts[slug] = (counts[slug] || 0) + 1;
+      setJson(STORAGE_KEYS.voivodeshipTiles, counts);
+      window.dispatchEvent(new Event("mq-voivodeships-updated"));
+    }
 
     return true;
   }

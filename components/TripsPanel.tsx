@@ -19,10 +19,12 @@ import TripPhotosPanel from "./TripPhotosPanel";
 import TripRoutePreview from "./TripRoutePreview";
 
 export default function TripsPanel() {
+  const [filter, setFilter] = useState("Wszystkie");
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<FinishedTrip | null>(null);
   const [trips, setTrips] = useState<FinishedTrip[]>([]);
   const [tripName, setTripName] = useState("");
+  const visibleTrips = filter === "Aktywne" ? [] : trips;
 
   useEffect(() => {
     const loadTrips = () => {
@@ -111,9 +113,9 @@ export default function TripsPanel() {
   return (
     <div className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
       <div className="space-y-4 p-3 sm:p-4">
-        <SegmentedTabs labels={["Wszystkie", "Aktywne", "Zakonczone"]} />
+        <SegmentedTabs active={filter} labels={["Wszystkie", "Aktywne", "Zakonczone"]} onChange={setFilter} />
 
-        {!activeTrip ? (
+        {filter !== "Zakonczone" && (!activeTrip ? (
           <div className="rounded-[1.4rem] border border-white/10 bg-zinc-950/80 p-3 shadow-xl shadow-black/20">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
@@ -147,9 +149,9 @@ export default function TripsPanel() {
           </div>
         ) : (
           <ActiveTripCard activeTrip={activeTrip} onEndTrip={endTrip} />
-        )}
+        ))}
 
-        <div className="space-y-3">
+        {filter !== "Aktywne" && <div className="space-y-3">
           <div className="flex items-center justify-between gap-3 px-1">
             <div>
               <h3 className="text-lg font-black text-white">Historia wypraw</h3>
@@ -162,8 +164,8 @@ export default function TripsPanel() {
             </span>
           </div>
 
-          {trips.length > 0 ? (
-            trips.slice(0, 10).map((trip, index) => (
+          {visibleTrips.length > 0 ? (
+            visibleTrips.slice(0, 10).map((trip, index) => (
               <FinishedTripCard
                 key={`${trip.startedAt}-${index}`}
                 trip={trip}
@@ -185,7 +187,7 @@ export default function TripsPanel() {
               </p>
             </div>
           )}
-        </div>
+        </div>}
 
         {selectedTrip && (
           <TripDetailsModal
@@ -198,16 +200,17 @@ export default function TripsPanel() {
   );
 }
 
-function SegmentedTabs({ labels }: { labels: string[] }) {
+function SegmentedTabs({ active, labels, onChange }: { active: string; labels: string[]; onChange: (label: string) => void }) {
   return (
     <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/45 p-1">
       {labels.map((label, index) => (
         <button
           key={label}
           type="button"
+          onClick={() => onChange(label)}
           className={[
             "min-h-10 rounded-xl px-2 text-[11px] font-black transition",
-            index === 0
+            active === label
               ? "bg-orange-500 text-black shadow-lg shadow-orange-500/20"
               : "text-zinc-400 hover:text-white",
           ].join(" ")}

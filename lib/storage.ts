@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   tripPhotos: "mq_trip_photos",
   trips: "mq_trips",
   voivodeships: "mq_voivodeships",
+  voivodeshipTiles: "mq_voivodeship_tiles",
 } as const;
 
 export function getJson<T>(key: string, fallback: T): T {

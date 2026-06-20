@@ -21,6 +21,7 @@ export type MissionCity = {
   name: string;
   required_missions: number;
   slug: string;
+  voivodeship?: string;
 };
 
 export type VerificationResult = {
@@ -33,6 +34,10 @@ export type VerificationResult = {
 
 export function getAccuratePosition() {
   return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!("geolocation" in navigator)) {
+      reject(new Error("Ten telefon nie udostepnia lokalizacji GPS."));
+      return;
+    }
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
       maximumAge: 5000,
