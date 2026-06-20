@@ -11,6 +11,7 @@ import { getProfile, PlayerProfile, saveProfile } from "../lib/profile";
 import { loadPlayer, savePlayer } from "../lib/playerService";
 import { getJson, getNumber, STORAGE_KEYS } from "../lib/storage";
 import { supabase } from "../lib/supabase";
+import type { FinishedTrip } from "../lib/trips";
 import type { PlayerStats } from "../lib/usePlayerStats";
 
 type PlayerProfilePanelProps = {
@@ -18,26 +19,26 @@ type PlayerProfilePanelProps = {
 };
 
 type CloudProfile = {
-  username: string | null;
   avatar_url: string | null;
+  username: string | null;
 };
 
-export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
+export default function PlayerProfilePanel({
+  stats,
+}: PlayerProfilePanelProps) {
   const [profile, setProfile] = useState<PlayerProfile>({
     avatarUrl: "",
     nickname: "MotoManiak",
   });
-  const [nickname, setNickname] = useState("");
   const [status, setStatus] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
+    const loadCloudAwareProfile = async () => {
       const savedProfile = getProfile();
 
       setProfile(savedProfile);
-      setNickname(savedProfile.nickname);
 
       const {
         data: { user },
@@ -49,6 +50,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
       }
 
       setIsLoggedIn(user.is_anonymous !== true);
+
       try {
         await loadPlayer(user.id);
       } catch (error) {
@@ -78,7 +80,6 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
         saveProfile(fallbackProfile);
         setProfile(fallbackProfile);
-        setNickname(fallbackProfile.nickname);
         return;
       }
 
@@ -96,35 +97,45 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
       saveProfile(cloudProfile);
       setProfile(cloudProfile);
-      setNickname(cloudProfile.nickname);
     };
 
-    void loadProfile();
+    void loadCloudAwareProfile();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      void loadProfile();
+      void loadCloudAwareProfile();
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const activeBike = getActiveBike();
   const distanceKm = getNumber(STORAGE_KEYS.distance);
-  const tripsCount = getJson<unknown[]>(STORAGE_KEYS.trips, []).length;
+  const trips = getJson<FinishedTrip[]>(STORAGE_KEYS.trips, []);
+  const voivodeships = getJson<string[]>(STORAGE_KEYS.voivodeships, []);
+  const lastTrip = trips[0] ?? null;
   const xpInLevel = stats.xp % 1000;
-  const xpPercent = Math.min(100, Math.round((xpInLevel / 1000) * 100));
+  const xpToNextLevel = Math.max(0, 1000 - xpInLevel);
 
   if (!isLoggedIn) {
     return (
       <section className="mq-profile-guest">
-        <img src="/icon-512.png" alt="MotoQuest" />
-        <h2>Nie jestes zalogowany</h2>
-        <p>Zaloguj sie, aby zapisywac postepy i synchronizowac je miedzy urzadzeniami.</p>
-        <div><a href="/login">Zaloguj sie</a><a href="/register" className="secondary">Zarejestruj sie</a></div>
+        <div className="mq-profile-guest-mark">MQ</div>
+        <div className="mq-profile-guest-copy">
+          <span className="mq-profile-eyebrow">Profil kierowcy</span>
+          <h2>Zaloguj sie, aby zachowac swoj swiat</h2>
+          <p>
+            Zaloguj sie, aby zapisywac postep i synchronizowac MotoQuest miedzy
+            telefonami.
+          </p>
+        </div>
+        <div className="mq-profile-guest-actions">
+          <a href="/login">Zaloguj sie</a>
+          <a href="/register" className="secondary">
+            Zarejestruj sie
+          </a>
+        </div>
       </section>
     );
   }
@@ -165,10 +176,10 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
     }
 
     const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      username: nextProfile.nickname,
       avatar_url: nextProfile.avatarUrl || null,
+      id: user.id,
       updated_at: new Date().toISOString(),
+      username: nextProfile.nickname,
     });
 
     if (error) {
@@ -184,39 +195,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
     saveProfile(nextProfile);
     setProfile(nextProfile);
-    setNickname(nextProfile.nickname);
-
     await syncPlayer();
-  };
-
-  const saveNickname = async () => {
-    const cleanNickname = nickname.trim();
-
-    setStatus("");
-
-    if (cleanNickname.length < 3) {
-      setStatus("Nick musi mieć minimum 3 znaki");
-      return;
-    }
-
-    try {
-      await updateProfile({
-        ...profile,
-        nickname: cleanNickname,
-      });
-
-      setStatus("Profil zapisany");
-    } catch (error) {
-      if (error instanceof Error && error.message === "USERNAME_TAKEN") {
-        setStatus("Ten nick jest juz zajety. Wybierz inny.");
-        return;
-      }
-
-      console.error("Save nickname error:", error);
-      setStatus("Nie udalo sie zapisac nicku w chmurze");
-      return;
-      setStatus("Nie udało się zapisać nicku w chmurze");
-    }
   };
 
   const uploadAvatar = async (file: File) => {
@@ -232,7 +211,7 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
         .upload(fileName, file);
 
       if (error) {
-        setStatus("Nie udało się wysłać avatara. Sprawdź bucket avatars.");
+        setStatus("Nie udalo sie wyslac avatara. Sprawdz bucket avatars.");
         return;
       }
 
@@ -245,109 +224,166 @@ export default function PlayerProfilePanel({ stats }: PlayerProfilePanelProps) {
 
       setStatus("Avatar zapisany");
     } catch {
-      setStatus("Nie udało się zapisać avatara");
+      setStatus("Nie udalo sie zapisac avatara");
     } finally {
       setUploadingAvatar(false);
     }
   };
 
   return (
-    <section className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
-      <div className="p-3">
-        <div className="overflow-hidden rounded-[1.45rem] border border-white/10 bg-zinc-950/90">
-          <div className="relative p-4">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_46%)]" />
-            <div className="relative flex items-center gap-4">
-              <label className="relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-orange-500 bg-zinc-800 shadow-2xl shadow-orange-500/15">
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-4xl font-black text-orange-500">
-                    {profile.nickname.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploadingAvatar}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
+    <section className="mq-profile-panel">
+      <div className="mq-profile-hero">
+        <div className="mq-profile-hero-glow" />
 
-                    if (file) {
-                      void uploadAvatar(file);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
+        <div className="mq-profile-hero-main">
+          <label className="mq-profile-avatar">
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="" className="mq-profile-avatar-image" />
+            ) : (
+              <span className="mq-profile-avatar-fallback">
+                {profile.nickname.slice(0, 1).toUpperCase()}
+              </span>
+            )}
 
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-2xl font-black text-white">
-                  {profile.nickname}
-                </div>
-                <div className="mt-1 text-sm font-black text-orange-400">
-                  Poziom {stats.level}
-                </div>
-                <div className="mt-2 text-xs font-semibold text-zinc-400">
-                  {activeBike
-                    ? `${activeBike.brand} ${activeBike.model}`
-                    : "Brak aktywnego motocykla"}
-                </div>
-                <div className="mt-2 text-[11px] font-bold text-zinc-500">
-                  {isLoggedIn
-                    ? "Konto zalogowane"
-                    : "Profil lokalny — zaloguj się, aby przenosić konto"}
-                </div>
-              </div>
+            <span className="mq-profile-avatar-edit">
+              {uploadingAvatar ? "..." : "Edytuj"}
+            </span>
+
+            <input
+              type="file"
+              accept="image/*"
+              disabled={uploadingAvatar}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+
+                if (file) {
+                  void uploadAvatar(file);
+                }
+              }}
+              className="hidden"
+            />
+          </label>
+
+          <div className="mq-profile-hero-copy">
+            <span className="mq-profile-eyebrow">Profil kierowcy</span>
+            <div className="mq-profile-hero-title-row">
+              <h2>{profile.nickname}</h2>
+              <span className="mq-profile-level-badge">LVL {stats.level}</span>
             </div>
+            <p>
+              {activeBike
+                ? `Aktywny motocykl: ${activeBike.brand} ${activeBike.model}`
+                : "Dodaj aktywny motocykl, aby domknac profil kierowcy."}
+            </p>
 
-            <div className="relative mt-5">
-              <div className="mb-2 flex items-center justify-between text-xs font-black">
-                <span className="text-orange-400">XP</span>
-                <span className="text-zinc-300">{xpInLevel} / 1000</span>
+            <div className="mq-profile-xp-inline">
+              <div className="mq-profile-xp-meta">
+                <span>XP</span>
+                <strong>
+                  {xpInLevel} / 1000
+                </strong>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800">
+              <div className="mq-profile-xp-rail">
                 <div
-                  className="h-full rounded-full bg-orange-500"
-                  style={{
-                    width: `${xpPercent}%`,
-                  }}
+                  className="mq-profile-xp-fill"
+                  style={{ width: `${Math.min(100, (xpInLevel / 1000) * 100)}%` }}
                 />
               </div>
+              <div className="mq-profile-xp-note">
+                Do kolejnego poziomu: {xpToNextLevel} XP
+              </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 border-t border-white/10">
-            <ProfileMetric
-              label="Polska"
-              value={formatDiscoveryPercent(stats.tiles)}
-            />
-            <ProfileMetric
-              label="Obszar"
-              value={formatDiscoveredArea(stats.tiles)}
-            />
-            <ProfileMetric label="Trasy" value={String(tripsCount)} />
-            <ProfileMetric label="Dystans" value={`${distanceKm.toFixed(0)} km`} />
           </div>
         </div>
 
-        {status && <div className="mt-3 text-sm font-bold text-orange-400">{status}</div>}
+        <div className="mq-profile-hero-side">
+          <HeroStat label="Polska" value={formatDiscoveryPercent(stats.tiles)} />
+          <HeroStat label="Obszar" value={formatDiscoveredArea(stats.tiles)} />
+        </div>
       </div>
+
+      <div className="mq-profile-metrics">
+        <ProfileMetric label="Kafelki" value={String(stats.tiles)} />
+        <ProfileMetric label="Miasta" value={String(stats.towns)} />
+        <ProfileMetric label="Dystans" value={`${distanceKm.toFixed(0)} km`} />
+        <ProfileMetric label="Wojewodztwa" value={String(voivodeships.length)} />
+      </div>
+
+      <div className="mq-profile-grid">
+        <article className="mq-profile-card-surface">
+          <span className="mq-profile-card-label">Aktywny motocykl</span>
+          <strong className="mq-profile-card-title">
+            {activeBike ? `${activeBike.brand} ${activeBike.model}` : "Brak motocykla"}
+          </strong>
+          <p className="mq-profile-card-copy">
+            {activeBike
+              ? `Przebieg przypisywany jest do tej maszyny podczas jazdy.`
+              : "Przejdz do garazu i ustaw swoj glowny motocykl."}
+          </p>
+          <a href="/#garage" className="mq-profile-shortcut-link">
+            Otworz garaz
+          </a>
+        </article>
+
+        <article className="mq-profile-card-surface">
+          <span className="mq-profile-card-label">Ostatnia aktywnosc</span>
+          <strong className="mq-profile-card-title">
+            {lastTrip ? lastTrip.name : "Brak zapisanej wyprawy"}
+          </strong>
+          <p className="mq-profile-card-copy">
+            {lastTrip
+              ? `${lastTrip.date} • ${lastTrip.distance.toFixed(1)} km • +${lastTrip.xp} XP`
+              : "Rozpocznij wyprawe, aby zapisac pierwszy slad odkrywcy."}
+          </p>
+          <div className="mq-profile-card-meta">
+            <span>{trips.length} wypraw</span>
+            <span>{stats.towns} odkrytych miast</span>
+          </div>
+        </article>
+      </div>
+
+      <div className="mq-profile-shortcuts">
+        <a href="/#garage" className="mq-profile-shortcut-card">
+          <span className="mq-profile-shortcut-icon">G</span>
+          <strong>Garaz</strong>
+          <small>Motocykle i aktywna maszyna</small>
+        </a>
+        <a href="/#achievements" className="mq-profile-shortcut-card">
+          <span className="mq-profile-shortcut-icon">O</span>
+          <strong>Osiagniecia</strong>
+          <small>Postep, nagrody i wyzwania</small>
+        </a>
+        <a href="/#ranking" className="mq-profile-shortcut-card">
+          <span className="mq-profile-shortcut-icon">R</span>
+          <strong>Ranking</strong>
+          <small>Porownaj odkryty obszar</small>
+        </a>
+        <a href="/#settings" className="mq-profile-shortcut-card">
+          <span className="mq-profile-shortcut-icon">U</span>
+          <strong>Ustawienia</strong>
+          <small>Konto, nick i preferencje</small>
+        </a>
+      </div>
+
+      {status ? <p className="mq-profile-status">{status}</p> : null}
     </section>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mq-profile-hero-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
 function ProfileMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-r border-t border-white/10 p-4 last:border-r-0 odd:border-r">
-      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
-        {label}
-      </div>
-      <div className="mt-1 text-2xl font-black text-white">{value}</div>
+    <div className="mq-profile-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

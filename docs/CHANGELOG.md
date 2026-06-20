@@ -1,5 +1,17 @@
 # Changelog MotoQuest
 
+# 1.4 - UI Premium Garage - 2026-06-20
+
+- Przebudowano wizualnie garaz motocykli i panel aktywnego motocykla w stylu premium.
+- Dodano wyrazniejsze karty maszyn, nowy pusty stan oraz bardziej czytelny formularz dodawania motocykla ze zdjeciem.
+- Zachowano dotychczasowa logike dodawania, wyboru aktywnego motocykla, uploadu zdjec i synchronizacji.
+
+# 1.4 - UI Premium Profile - 2026-06-20
+
+- Przebudowano wizualnie profil gracza, pasek XP, odznaki specjalne, status chmury i ustawienia.
+- Profil pokazuje teraz premium dashboard z aktywnym motocyklem, ostatnia aktywnoscia i skrotami do kluczowych zakladek.
+- Zachowano dotychczasowa logike synchronizacji, avatara, nicku, danych XP i ustawien konta.
+
 ## 1.4 - UI Premium Auth - 2026-06-20
 
 - Przebudowano wizualnie logowanie, rejestracje i reset hasla.

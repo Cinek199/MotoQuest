@@ -6,23 +6,38 @@ import { supabase } from "../lib/supabase";
 
 type Badge = {
   description: string;
-  icon: string;
+  icon: string | null;
   id: string;
   name: string;
 };
 
 export default function SpecialBadgesPanel() {
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [completedBadgeIds, setCompletedBadgeIds] = useState<string[]>([]);
   const [completedCities, setCompletedCities] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setIsLoading(true);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
 
-      const [badgeLinks, cityLinks] = await Promise.all([
+      if (!user) {
+        setBadges([]);
+        setCompletedBadgeIds([]);
+        setCompletedCities(0);
+        setIsLoading(false);
+        return;
+      }
+
+      const [allBadgesResponse, badgeLinks, cityLinks] = await Promise.all([
+        supabase
+          .from("mq_special_badges")
+          .select("id, name, description, icon")
+          .order("name"),
         supabase
           .from("mq_user_special_badges")
           .select("badge_id")
@@ -32,48 +47,79 @@ export default function SpecialBadgesPanel() {
           .select("city_id")
           .eq("user_id", user.id),
       ]);
-      const ids = (badgeLinks.data ?? []).map((item) => item.badge_id);
 
-      if (ids.length > 0) {
-        const { data } = await supabase
-          .from("mq_special_badges")
-          .select("id, name, description, icon")
-          .in("id", ids);
-        setBadges((data ?? []) as Badge[]);
-      }
-
+      setBadges((allBadgesResponse.data ?? []) as Badge[]);
+      setCompletedBadgeIds(
+        (badgeLinks.data ?? []).map((item) => String(item.badge_id))
+      );
       setCompletedCities(cityLinks.data?.length ?? 0);
+      setIsLoading(false);
     };
 
     void load();
   }, []);
 
+  const unlockedCount = completedBadgeIds.length;
+
   return (
-    <section className="border-y border-white/10 bg-black/30 py-4">
-      <div className="flex items-center justify-between">
+    <section className="mq-badges-panel">
+      <div className="mq-badges-panel-head">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-orange-500">
-            Kolekcja gracza
-          </div>
-          <h2 className="text-lg font-black text-white">Odznaki specjalne</h2>
+          <span className="mq-profile-eyebrow">Kolekcja gracza</span>
+          <h2>Odznaki specjalne</h2>
+          <p>Rzadkie trofea za miasta, progres i jazde po swoim stylu.</p>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-black text-orange-400">{completedCities}</div>
-          <div className="text-[9px] font-bold uppercase text-zinc-500">ukonczone miasta</div>
+
+        <div className="mq-badges-counter">
+          <strong>{unlockedCount}</strong>
+          <span>odblokowane</span>
         </div>
       </div>
 
-      {badges.length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {badges.map((badge) => (
-            <div key={badge.id} className="rounded-lg border border-orange-500/20 bg-zinc-950 p-3">
-              <div className="text-sm font-black text-orange-300">{badge.name}</div>
-              <div className="mt-1 text-[10px] text-zinc-500">{badge.description}</div>
-            </div>
-          ))}
+      <div className="mq-badges-summary">
+        <div className="mq-badges-summary-card">
+          <span>Ukonczone miasta</span>
+          <strong>{completedCities}</strong>
+        </div>
+        <div className="mq-badges-summary-card">
+          <span>Wszystkie odznaki</span>
+          <strong>{badges.length}</strong>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="mq-badges-empty">Ladowanie kolekcji odznak...</div>
+      ) : badges.length === 0 ? (
+        <div className="mq-badges-empty">
+          Pierwsza rzadka odznaka nadal czeka na odkrycie.
         </div>
       ) : (
-        <div className="mt-3 text-sm text-zinc-500">Pierwsza rzadka odznaka nadal czeka.</div>
+        <div className="mq-badges-grid">
+          {badges.map((badge) => {
+            const unlocked = completedBadgeIds.includes(badge.id);
+
+            return (
+              <article
+                key={badge.id}
+                className={[
+                  "mq-badge-card",
+                  unlocked ? "is-unlocked" : "is-locked",
+                ].join(" ")}
+              >
+                <div className="mq-badge-card-top">
+                  <span className="mq-badge-icon">
+                    {badge.icon?.trim() || badge.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="mq-badge-state">
+                    {unlocked ? "Zdobyta" : "Zablokowana"}
+                  </span>
+                </div>
+                <strong>{badge.name}</strong>
+                <p>{badge.description}</p>
+              </article>
+            );
+          })}
+        </div>
       )}
     </section>
   );

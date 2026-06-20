@@ -51,9 +51,10 @@ Brak otwartych zadan krytycznych.
 
 ### UI Premium - profil
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Wplyw: wysoki - glowny ekran postepu gracza.
+- Opis: wdrozono 2026-06-20; build poprawny, logika synchronizacji i danych gracza pozostala bez zmian.
 
 ### UI Premium - HUD mapy
 
@@ -71,9 +72,10 @@ Brak otwartych zadan krytycznych.
 
 ### UI Premium - garaz
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Wplyw: sredni - zarzadzanie motocyklem.
+- Opis: wdrozono 2026-06-20; build poprawny, logika garazu i synchronizacji pozostala bez zmian.
 
 ### UI Premium - odznaki i ranking
 

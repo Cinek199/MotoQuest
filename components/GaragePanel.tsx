@@ -71,9 +71,9 @@ export default function GaragePanel() {
       });
 
       const nextGarage = [...garage, bike];
+
       saveGarage(nextGarage);
       setActiveBikeId(bike.id);
-
       setGarage(nextGarage);
       setActiveBikeIdState(bike.id);
       setBrand("");
@@ -121,148 +121,196 @@ export default function GaragePanel() {
     setActiveBikeIdState(bikeId);
     await syncPlayer();
   };
+
   const activeBike = garage.find((bike) => bike.id === activeBikeId) || null;
   const otherBikes = garage.filter((bike) => bike.id !== activeBikeId);
+  const totalDistance = garage.reduce(
+    (sum, bike) => sum + Number(bike.totalDistanceKm || 0),
+    0
+  );
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#08090b] shadow-2xl shadow-black/50">
-      <PanelHeader eyebrow="Maszyny" title="Garaz" count={garage.length} />
+    <section className="mq-garage-panel">
+      <div className="mq-garage-hero">
+        <div className="mq-garage-hero-copy">
+          <span className="mq-profile-eyebrow">Maszyny</span>
+          <h2>Garaz MotoQuest</h2>
+          <p>
+            Buduj swoja kolekcje motocykli i przypinaj przebieg do aktywnej
+            maszyny.
+          </p>
+        </div>
 
-      <div className="grid gap-4 p-4 sm:p-5">
-        {activeBike ? (
-          <BikeHero bike={activeBike} />
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-black/35 p-5 text-zinc-500">
-            Brak motocykli w garazu
+        <div className="mq-garage-hero-stats">
+          <GarageHeroStat label="Motocykle" value={String(garage.length)} />
+          <GarageHeroStat
+            label="Laczny przebieg"
+            value={`${totalDistance.toFixed(0)} km`}
+          />
+        </div>
+      </div>
+
+      {activeBike ? (
+        <BikeHero bike={activeBike} />
+      ) : (
+        <div className="mq-garage-empty">
+          <div className="mq-garage-empty-mark">M</div>
+          <strong>Brak motocykli w garazu</strong>
+          <p>Dodaj swoja pierwsza maszyne, aby przypisywac do niej wyprawy.</p>
+        </div>
+      )}
+
+      <div className="mq-garage-form-card">
+        <div className="mq-garage-form-head">
+          <div>
+            <span className="mq-profile-eyebrow">Nowy motocykl</span>
+            <h3>Dodaj maszyne do kolekcji</h3>
           </div>
-        )}
+          <div className="mq-garage-form-badge">Dodaj motocykl</div>
+        </div>
 
-        <div className="grid gap-2 rounded-[1.5rem] border border-white/10 bg-black/45 p-3 shadow-xl shadow-black/20 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-500">
-              Dodaj motocykl
-            </div>
-          </div>
-
+        <div className="mq-garage-form-grid">
           <GarageInput placeholder="Marka" value={brand} onChange={setBrand} />
           <GarageInput placeholder="Model" value={model} onChange={setModel} />
           <GarageInput placeholder="Rok" value={year} onChange={setYear} />
-          <GarageInput placeholder="Pojemnosc" value={engine} onChange={setEngine} />
+          <GarageInput
+            placeholder="Pojemnosc"
+            value={engine}
+            onChange={setEngine}
+          />
 
-          <label className="rounded-2xl border border-dashed border-orange-500/30 bg-orange-500/5 px-4 py-4 sm:col-span-2">
-            <span className="block text-sm font-black text-white">
-              Zdjecie motocykla
-            </span>
-            <span className="mt-1 block text-xs font-bold text-zinc-500">
-              Galeria lub aparat
-            </span>
+          <label className="mq-garage-upload">
+            <span className="mq-garage-upload-title">Zdjecie motocykla</span>
+            <span className="mq-garage-upload-copy">Galeria lub aparat</span>
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
+              onChange={(event) => {
+                const file = event.target.files?.[0];
 
                 if (file) {
                   void uploadBikePhoto(file);
                 }
               }}
-              className="mt-3 w-full text-xs font-bold text-zinc-400 file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-black"
+              className="mq-garage-upload-input"
             />
           </label>
 
-          {uploadingPhoto && (
+          {uploadingPhoto ? (
             <Notice tone="orange" text="Wysylanie zdjecia..." />
-          )}
-          {photoError && <Notice tone="red" text={photoError} />}
-          {saveError && <Notice tone="red" text={saveError} />}
+          ) : null}
+          {photoError ? <Notice tone="red" text={photoError} /> : null}
+          {saveError ? <Notice tone="red" text={saveError} /> : null}
 
-          {imageUrl && (
-            <div className="overflow-hidden rounded-2xl border border-white/10 sm:col-span-2">
-              <img src={imageUrl} alt="" className="h-44 w-full object-cover" />
+          {imageUrl ? (
+            <div className="mq-garage-upload-preview">
+              <img src={imageUrl} alt="" />
             </div>
-          )}
+          ) : null}
 
           <input
             type="number"
             min="0"
             placeholder="Aktualny przebieg motocykla"
             value={initialDistance}
-            onChange={(e) => setInitialDistance(e.target.value)}
-            className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 sm:col-span-2"
+            onChange={(event) => setInitialDistance(event.target.value)}
+            className="mq-garage-input mq-garage-distance-input"
           />
 
           <button
+            type="button"
             onClick={saveBike}
             disabled={uploadingPhoto}
-            className="rounded-2xl bg-orange-500 py-4 font-black text-black shadow-lg shadow-orange-500/20 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
+            className="mq-garage-submit"
           >
             {uploadingPhoto ? "Poczekaj na zdjecie" : "Dodaj motocykl"}
           </button>
         </div>
+      </div>
 
-        {otherBikes.length > 0 && (
-          <div className="space-y-3">
-            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-lime-400">
-              Moje motocykle
-            </div>
+      <div className="mq-garage-collection">
+        <div className="mq-garage-collection-head">
+          <span className="mq-profile-eyebrow">Kolekcja</span>
+          <strong>{garage.length} maszyn</strong>
+        </div>
 
+        {otherBikes.length > 0 ? (
+          <div className="mq-garage-cards">
             {otherBikes.map((bike) => (
-            <BikeCard
-              key={bike.id}
-              active={false}
-              bike={bike}
-              onActivate={() => activateBike(bike.id)}
-            />
+              <BikeCard
+                key={bike.id}
+                active={false}
+                bike={bike}
+                onActivate={() => activateBike(bike.id)}
+              />
             ))}
           </div>
-        )}
+        ) : garage.length > 0 ? (
+          <div className="mq-garage-empty secondary">
+            <strong>Masz juz wybrany glowny motocykl</strong>
+            <p>Kolejne motocykle pojawia sie tutaj jako osobne karty premium.</p>
+          </div>
+        ) : null}
       </div>
-    </div>
+    </section>
   );
 }
 
 function BikeHero({ bike }: { bike: Bike }) {
   return (
-    <article className="overflow-hidden rounded-[1.5rem] border border-orange-500/35 bg-black shadow-xl shadow-orange-500/10">
-      <div className="relative h-56 bg-zinc-950">
+    <article className="mq-garage-hero-bike">
+      <div className="mq-garage-hero-bike-media">
         {bike.imageUrl ? (
-          <img src={bike.imageUrl} alt="" className="h-full w-full object-cover" />
+          <img src={bike.imageUrl} alt="" />
         ) : (
-          <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.16),transparent_45%),linear-gradient(135deg,#18181b,#020202)]">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-orange-500/30 bg-orange-500/10 text-3xl font-black text-orange-400">
-              M
-            </div>
-          </div>
+          <div className="mq-garage-hero-bike-fallback">M</div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-        <div className="absolute right-3 top-3 rounded-full border border-lime-500/30 bg-lime-500/15 px-3 py-1 text-[10px] font-black uppercase text-lime-300">
-          Aktywny
-        </div>
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="text-2xl font-black text-white">
+
+        <div className="mq-garage-hero-bike-overlay" />
+        <div className="mq-garage-hero-bike-status">Aktywny motocykl</div>
+        <div className="mq-garage-hero-bike-copy">
+          <span className="mq-profile-eyebrow">Maszyna glowna</span>
+          <h3>
             {bike.brand} {bike.model}
-          </div>
-          <div className="mt-1 text-sm font-bold text-zinc-300">
-            {bike.year || "Brak rocznika"} / {bike.engine || "Brak pojemnosci"}
-          </div>
+          </h3>
+          <p>
+            {bike.year || "Brak rocznika"} /{" "}
+            {bike.engine || "Brak pojemnosci"}
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 border-t border-white/10">
-        <BikeMiniMetric label="Przebieg" value={`${bike.totalDistanceKm.toFixed(1)} km`} />
-        <BikeMiniMetric label="Trasy" value="Aktywny" />
+      <div className="mq-garage-hero-bike-metrics">
+        <BikeMiniMetric
+          label="Przebieg"
+          value={`${bike.totalDistanceKm.toFixed(1)} km`}
+        />
+        <BikeMiniMetric label="Status" value="Aktywny" />
       </div>
     </article>
   );
 }
 
+function GarageHeroStat({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="mq-garage-hero-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function BikeMiniMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-r border-white/10 p-4 last:border-r-0">
-      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
-        {label}
-      </div>
-      <div className="mt-1 truncate text-lg font-black text-white">{value}</div>
+    <div className="mq-garage-mini-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -279,50 +327,42 @@ function BikeCard({
   return (
     <article
       className={[
-        "overflow-hidden rounded-[1.5rem] border bg-black/45 transition hover:border-orange-500/35",
-        active ? "border-orange-500 shadow-lg shadow-orange-500/10" : "border-white/10",
+        "mq-garage-bike-card",
+        active ? "is-active" : "",
       ].join(" ")}
     >
-      {bike.imageUrl && (
-        <img src={bike.imageUrl} alt="" className="h-40 w-full object-cover" />
-      )}
+      <div className="mq-garage-bike-card-media">
+        {bike.imageUrl ? (
+          <img src={bike.imageUrl} alt="" />
+        ) : (
+          <div className="mq-garage-bike-card-fallback">M</div>
+        )}
+      </div>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-xl font-black text-white">
+      <div className="mq-garage-bike-card-body">
+        <div className="mq-garage-bike-card-head">
+          <div>
+            <strong>
               {bike.brand} {bike.model}
-            </div>
-            <div className="mt-1 text-sm text-zinc-400">
-              {bike.year || "Brak rocznika"} / {bike.engine || "Brak pojemnosci"}
-            </div>
-          </div>
-
-          {active && (
-            <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-black text-black">
-              Aktywny
+            </strong>
+            <span>
+              {bike.year || "Brak rocznika"} /{" "}
+              {bike.engine || "Brak pojemnosci"}
             </span>
-          )}
+          </div>
+          {active ? <em>Aktywny</em> : null}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-950 p-3">
-          <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-            Przebieg motocykla
-          </div>
-          <div className="mt-1 text-2xl font-black text-orange-500">
-            {bike.totalDistanceKm.toFixed(1)} km
-          </div>
+        <div className="mq-garage-bike-card-metric">
+          <span>Przebieg motocykla</span>
+          <strong>{bike.totalDistanceKm.toFixed(1)} km</strong>
         </div>
 
-        {!active && (
-          <button
-            type="button"
-            onClick={onActivate}
-            className="mt-3 w-full rounded-2xl border border-orange-500/40 bg-orange-500/10 px-4 py-3 font-black text-orange-400 transition hover:bg-orange-500 hover:text-black"
-          >
+        {!active ? (
+          <button type="button" onClick={onActivate} className="mq-garage-activate">
             Ustaw jako aktywny
           </button>
-        )}
+        ) : null}
       </div>
     </article>
   );
@@ -341,8 +381,8 @@ function GarageInput({
     <input
       placeholder={placeholder}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-bold outline-none transition placeholder:text-zinc-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
+      onChange={(event) => onChange(event.target.value)}
+      className="mq-garage-input"
     />
   );
 }
@@ -351,43 +391,11 @@ function Notice({ text, tone }: { text: string; tone: "orange" | "red" }) {
   return (
     <div
       className={[
-        "rounded-2xl border px-4 py-3 text-sm font-bold sm:col-span-2",
-        tone === "orange"
-          ? "border-orange-500/30 bg-orange-500/10 text-orange-300"
-          : "border-red-500/40 bg-red-500/10 text-red-300",
+        "mq-garage-notice",
+        tone === "orange" ? "is-orange" : "is-red",
       ].join(" ")}
     >
       {text}
-    </div>
-  );
-}
-
-function PanelHeader({
-  count,
-  eyebrow,
-  title,
-}: {
-  count: number;
-  eyebrow: string;
-  title: string;
-}) {
-  return (
-    <div className="relative overflow-hidden border-b border-white/10 px-4 py-5 sm:px-5">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.2),transparent_42%),linear-gradient(135deg,rgba(24,24,27,0.9),rgba(0,0,0,0.35))]" />
-      <div className="relative flex items-end justify-between gap-4">
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.35em] text-orange-500">
-            {eyebrow}
-          </div>
-          <h2 className="mt-1 text-2xl font-black text-white">{title}</h2>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-black text-orange-400">{count}</div>
-          <div className="text-[10px] font-black uppercase text-zinc-500">
-            szt.
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -101,7 +101,7 @@ Ujednolicic wejscie do aplikacji w stylu premium bez zmiany Supabase Auth, sesji
 
 ## TASK-005: UI Premium - etap 2 - profil
 
-- Status: READY
+- Status: DONE
 - Priorytet: HIGH
 - Zrodlo: Uzytkownik
 - Data dodania: 2026-06-20
@@ -127,6 +127,12 @@ Przebudowac hierarchie wizualna profilu bez zmiany synchronizacji gracza.
 
 - Dane profilu, XP, aktywny motocykl i status chmury pozostaja zgodne.
 - Nawigacja profil - ustawienia - osiagniecia dziala.
+
+### Wynik
+
+- Wdrozono premium dashboard profilu dla stanu zalogowanego i niezalogowanego.
+- Ujednolicono wizualnie XP, odznaki specjalne, status chmury i ustawienia.
+- `npm run build` zakonczony poprawnie 2026-06-20.
 
 ## TASK-006: UI Premium - etap 3 - glowna mapa
 
@@ -188,7 +194,7 @@ Poprawic prezentacje listy miast, misji, postepu i komunikatow.
 
 ## TASK-008: UI Premium - etap 5 - garaz
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Zrodlo: Uzytkownik
 - Data dodania: 2026-06-20
@@ -211,6 +217,12 @@ Ujednolicic karty motocykli, formularz i aktywna maszyne.
 
 - Dodanie i wybor motocykla dzialaja.
 - Motocykl pojawia sie po zalogowaniu na drugim urzadzeniu.
+
+### Wynik
+
+- Wdrozono premium UI garazu, formularza dodawania motocykla i aktywnej maszyny.
+- Zachowano istniejace akcje: dodawanie motocykla, upload zdjecia i wybor aktywnego motocykla.
+- `npm run build` zakonczony poprawnie 2026-06-20.
 
 ## TASK-009: UI Premium - etap 6 - odznaki i ranking
 
