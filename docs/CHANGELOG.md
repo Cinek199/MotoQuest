@@ -5,6 +5,7 @@
 - Przebudowano wizualnie logowanie, rejestracje i reset hasla.
 - Dodano glassmorphism, mocniejszy branding MQ i motocyklowy klimat adventure.
 - Poprawiono safe area, zachowanie z klawiatura mobilna oraz stany loading, disabled i error.
+- Poprawiono przewijanie rejestracji i widocznosc przycisku Apple na niskich ekranach.
 - Zachowano dotychczasowa logike Supabase Auth, OAuth, resetu hasla i sesji.
 
 ## 1.4 - 2026-06-20
