@@ -85,10 +85,14 @@ export default function SpecialBadgesPanel() {
           <span>Wszystkie odznaki</span>
           <strong>{badges.length}</strong>
         </div>
+        <div className="mq-badges-summary-card">
+          <span>Status kolekcji</span>
+          <strong>{badges.length ? `${Math.round((unlockedCount / badges.length) * 100)}%` : "0%"}</strong>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="mq-badges-empty">Ladowanie kolekcji odznak...</div>
+        <div className="mq-badges-empty">Ladowanie prestizowych odznak...</div>
       ) : badges.length === 0 ? (
         <div className="mq-badges-empty">
           Pierwsza rzadka odznaka nadal czeka na odkrycie.

@@ -1,5 +1,11 @@
 # Changelog MotoQuest
 
+# 1.4 - UI Premium Achievements & Ranking - 2026-06-20
+
+- Przebudowano wizualnie osiagniecia, specjalne odznaki, mape Polski i ranking graczy.
+- Dodano bardziej czytelne karty progresu, prestizowe badge cards, premium leaderboard oraz odswiezony panel wojewodztw z herbami.
+- Zachowano dotychczasowa logike XP, filtrow osiagniec, rankingu RPC i postepu wojewodztw.
+
 # 1.4 - UI Premium Garage - 2026-06-20
 
 - Przebudowano wizualnie garaz motocykli i panel aktywnego motocykla w stylu premium.

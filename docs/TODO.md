@@ -79,9 +79,10 @@ Brak otwartych zadan krytycznych.
 
 ### UI Premium - odznaki i ranking
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Wplyw: sredni - motywacja i rywalizacja.
+- Opis: wdrozono 2026-06-20; build poprawny, logika XP, ranking RPC i postep wojewodztw pozostaly bez zmian.
 
 ### Testy responsywnosci UI Premium
 

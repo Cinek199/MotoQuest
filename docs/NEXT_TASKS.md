@@ -226,7 +226,7 @@ Ujednolicic karty motocykli, formularz i aktywna maszyne.
 
 ## TASK-009: UI Premium - etap 6 - odznaki i ranking
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Zrodlo: Uzytkownik
 - Data dodania: 2026-06-20
@@ -252,3 +252,9 @@ Ujednolicic wizualnie osiagniecia, mape Polski i ranking.
 - Wszystkie filtry i sekcje dzialaja.
 - Ranking pokazuje tylko zarejestrowane konta.
 - Build i test regresji danych przechodza.
+
+### Wynik
+
+- Wdrozono premium UI dla osiagniec, specjalnych odznak, mapy Polski i rankingu.
+- Zachowano filtry, zwijanie sekcji, ranking RPC i herby wojewodztw.
+- `npm run build` zakonczony poprawnie 2026-06-20.
