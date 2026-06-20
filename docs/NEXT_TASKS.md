@@ -62,3 +62,175 @@ Sprawdzic przypisanie i zaliczenie misji.
 - Misja w promieniu zapisuje postep i XP.
 - Zdjecie trafia do prywatnego bucketu tylko gdy jest wymagane.
 
+## TASK-004: UI Premium - etap 1 - logowanie i rejestracja
+
+- Status: READY
+- Priorytet: HIGH
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Ujednolicic wejscie do aplikacji w stylu premium bez zmiany Supabase Auth, sesji i OAuth.
+
+### Zakres
+
+- `components/AuthShell.tsx`
+- `components/AuthLoginForm.tsx`
+- `components/AuthRegisterForm.tsx`
+- `app/(auth)/*/page.tsx`
+- Wylacznie klasy prezentacyjne auth w `app/globals.css`
+
+### Wymagania
+
+- Nie zmieniac `lib/auth.ts` ani `lib/supabase.ts`.
+- Zachowac logowanie, rejestracje, reset hasla, OAuth i zapamietanie sesji.
+- Zachowac safe area i obsluge klawiatury mobilnej.
+
+### Kryteria ukonczenia
+
+- Build przechodzi.
+- Formularze dzialaja na mobile i desktop.
+- Bledy, loading, disabled i powrot do profilu sa czytelne.
+
+## TASK-005: UI Premium - etap 2 - profil
+
+- Status: READY
+- Priorytet: HIGH
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Przebudowac hierarchie wizualna profilu bez zmiany synchronizacji gracza.
+
+### Zakres
+
+- `components/PlayerProfilePanel.tsx`
+- `components/XPBar.tsx`
+- `components/SpecialBadgesPanel.tsx`
+- `components/CloudStatusPanel.tsx`
+- `components/SettingsPanel.tsx`
+
+### Wymagania
+
+- Nie zmieniac `lib/playerService.ts`, schematu Supabase ani storage.
+- Zachowac stany zalogowany/niezalogowany i obsluge avatara.
+
+### Kryteria ukonczenia
+
+- Dane profilu, XP, aktywny motocykl i status chmury pozostaja zgodne.
+- Nawigacja profil - ustawienia - osiagniecia dziala.
+
+## TASK-006: UI Premium - etap 3 - glowna mapa
+
+- Status: BLOCKED
+- Priorytet: HIGH
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Odnowic HUD mapy bez ingerencji w silnik MapLibre i Fog of Discovery.
+
+### Zakres
+
+- `components/MapHud.tsx`
+- Bezpieczne klasy HUD w `app/globals.css`
+
+### Wymagania
+
+- Bezwzglednie nie zmieniac `components/MapView.tsx`.
+- Nie zmieniac `lib/useMotoQuestTracking.ts`, `lib/tiles.ts` ani kluczy `mq_*`.
+- Nie zmieniac Canvas Fog, projekcji kafelkow i animacji mgly.
+
+### Kryteria ukonczenia
+
+- Przed rozpoczeciem wymagane wyniki TASK-002.
+- Gesty mapy, sledzenie, warstwy, zoom i nagrywanie dzialaja bez regresji.
+- Porownanie pion/poziom na iOS i Android.
+
+### Notatki projektowe
+
+Status BLOCKED do czasu fizycznego testu wydajnosci mapy.
+
+## TASK-007: UI Premium - etap 4 - misje miejskie
+
+- Status: BLOCKED
+- Priorytet: MEDIUM
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Poprawic prezentacje listy miast, misji, postepu i komunikatow.
+
+### Zakres
+
+- Warstwa prezentacyjna `components/CityMissionsPanel.tsx`.
+- Ikony i klasy wizualne misji.
+
+### Wymagania
+
+- Nie zmieniac `lib/cityMissions.ts`, Edge Function, Storage, RPC ani schematu bazy.
+- Zachowac wszystkie stany GPS, zdjecia, busy, success i error.
+
+### Kryteria ukonczenia
+
+- Przed rozpoczeciem zakonczony TASK-003.
+- Zaliczenie GPS i upload zdjecia przechodza test regresji.
+
+## TASK-008: UI Premium - etap 5 - garaz
+
+- Status: READY
+- Priorytet: MEDIUM
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Ujednolicic karty motocykli, formularz i aktywna maszyne.
+
+### Zakres
+
+- `components/GaragePanel.tsx`
+- `components/BikeProfilePanel.tsx`
+
+### Wymagania
+
+- Nie zmieniac `lib/garage.ts`, `lib/playerService.ts`, Storage i Supabase.
+- Zachowac upload zdjecia i synchronizacje wielourzadzeniowa.
+
+### Kryteria ukonczenia
+
+- Dodanie i wybor motocykla dzialaja.
+- Motocykl pojawia sie po zalogowaniu na drugim urzadzeniu.
+
+## TASK-009: UI Premium - etap 6 - odznaki i ranking
+
+- Status: READY
+- Priorytet: MEDIUM
+- Zrodlo: Uzytkownik
+- Data dodania: 2026-06-20
+
+### Cel
+
+Ujednolicic wizualnie osiagniecia, mape Polski i ranking.
+
+### Zakres
+
+- `components/AchievementsPanel.tsx`
+- `components/SpecialBadgesPanel.tsx`
+- `components/PolandMap.tsx`
+- `components/LeaderboardPanel.tsx`
+
+### Wymagania
+
+- Nie zmieniac naliczania XP, kluczy storage ani `mq_real_player_leaderboard()`.
+- Zachowac filtry, zwijanie sekcji i sortowanie po obszarze.
+
+### Kryteria ukonczenia
+
+- Wszystkie filtry i sekcje dzialaja.
+- Ranking pokazuje tylko zarejestrowane konta.
+- Build i test regresji danych przechodza.
