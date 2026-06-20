@@ -4,9 +4,9 @@ import AuthShell from "../../../components/AuthShell";
 export default function RegisterPage() {
   return (
     <AuthShell
-      eyebrow="Panel rejestracji"
+      eyebrow="Nowa przygoda"
       title={<>Dolacz do <span>MotoQuest</span></>}
-      subtitle="Utworz konto i zacznij odkrywac swiat"
+      subtitle="Utworz profil i wyrusz na pierwsza trase"
     >
       <AuthRegisterForm />
     </AuthShell>

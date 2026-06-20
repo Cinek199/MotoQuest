@@ -61,18 +61,21 @@ export default function AuthRegisterForm() {
 
   return (
     <form onSubmit={handleRegister} className="mq-auth-form">
-      <AuthInput icon="user" type="text" value={username} onChange={setUsername} placeholder="Nick" disabled={isLoading} />
+      <AuthInput icon="user" label="Nick kierowcy" name="username" autoComplete="username" type="text" value={username} onChange={setUsername} placeholder="Twoj unikalny nick" disabled={isLoading} />
       <div className="mq-auth-hint">Min. 3 znaki, unikalny</div>
-      <AuthInput icon="mail" type="email" value={email} onChange={setEmail} placeholder="E-mail" disabled={isLoading} />
-      <AuthInput icon="lock" type={showPassword ? "text" : "password"} value={password} onChange={setPassword} placeholder="Haslo" disabled={isLoading} action={() => setShowPassword((value) => !value)} />
+      <AuthInput icon="mail" label="Adres e-mail" name="email" autoComplete="email" type="email" value={email} onChange={setEmail} placeholder="E-mail" disabled={isLoading} />
+      <AuthInput icon="lock" label="Haslo" name="password" autoComplete="new-password" type={showPassword ? "text" : "password"} value={password} onChange={setPassword} placeholder="Haslo" disabled={isLoading} action={() => setShowPassword((value) => !value)} />
       <div className="mq-auth-hint">Min. 6 znakow</div>
       <button type="submit" disabled={isLoading} className="mq-auth-primary">
+        {isLoading && <span className="mq-auth-spinner" aria-hidden="true" />}
         {isLoading ? "Tworzenie konta..." : "Zarejestruj sie"}
       </button>
       <AuthDivider />
-      <OAuthButton label="Zarejestruj sie przez Google" onClick={() => void oauth("google")} mark="G" />
-      <OAuthButton label="Zarejestruj sie przez Apple" onClick={() => void oauth("apple")} mark="A" />
-      {message && <div className="mq-auth-message">{message}</div>}
+      <div className="mq-auth-socials">
+        <OAuthButton disabled={isLoading} label="Zarejestruj sie przez Google" onClick={() => void oauth("google")} mark="G" />
+        <OAuthButton disabled={isLoading} label="Zarejestruj sie przez Apple" onClick={() => void oauth("apple")} mark="A" />
+      </div>
+      {message && <div className="mq-auth-message" role="status"><span aria-hidden="true">!</span>{message}</div>}
       <div className="mq-auth-switch">Masz juz konto? <Link href="/login">Zaloguj sie</Link></div>
     </form>
   );

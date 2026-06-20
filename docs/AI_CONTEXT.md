@@ -25,7 +25,7 @@ MotoQuest jest mobilna gra eksploracyjna oparta o rzeczywiste podroze motocyklem
 | Misje miejskie | ACTIVE | 80 miast, GPS, prywatne zdjecia i 5 typow misji | `components/CityMissionsPanel.tsx`, `lib/cityMissions.ts` |
 | Ranking | ACTIVE | Zarejestrowani gracze wedlug odkrytego obszaru | `components/LeaderboardPanel.tsx` |
 | Garaz | ACTIVE | Motocykle, zdjecia i synchronizacja | `components/GaragePanel.tsx`, `lib/playerService.ts` |
-| Konto | ACTIVE | Auth, OAuth, reset hasla i trwala sesja | `app/(auth)`, `lib/auth.ts` |
+| Konto | ACTIVE | Premium UI Auth, OAuth, reset hasla i trwala sesja | `app/(auth)`, `components/AuthShell.tsx`, `lib/auth.ts` |
 | Android | ACTIVE | Background GPS i Picture in Picture | `android/`, `lib/nativeAndroid.ts` |
 | PWA | ACTIVE | Service Worker, instalacja i safe area | `app/layout.tsx`, `public/sw.js` |
 
@@ -104,4 +104,3 @@ docs/                   Dokumentacja projektu
 - Anty-cheat GPS.
 
 Pelna historia znajduje sie w [CHANGELOG.md](CHANGELOG.md).
-

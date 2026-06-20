@@ -44,9 +44,10 @@ Brak otwartych zadan krytycznych.
 
 ### UI Premium - login i rejestracja
 
-- Status: READY
+- Status: DONE
 - Priorytet: MEDIUM
 - Wplyw: wysoki - pierwsze wrazenie i czytelnosc autoryzacji.
+- Opis: wdrozono 2026-06-20; build poprawny, logika Auth pozostala bez zmian.
 
 ### UI Premium - profil
 

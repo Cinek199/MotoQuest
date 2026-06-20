@@ -1,5 +1,12 @@
 # Changelog MotoQuest
 
+## 1.4 - UI Premium Auth - 2026-06-20
+
+- Przebudowano wizualnie logowanie, rejestracje i reset hasla.
+- Dodano glassmorphism, mocniejszy branding MQ i motocyklowy klimat adventure.
+- Poprawiono safe area, zachowanie z klawiatura mobilna oraz stany loading, disabled i error.
+- Zachowano dotychczasowa logike Supabase Auth, OAuth, resetu hasla i sesji.
+
 ## 1.4 - 2026-06-20
 
 - Ranking prawdziwych graczy wedlug odkrytego obszaru.
@@ -27,4 +34,3 @@
 ## 1.0 - 2026-06-18
 
 - Pierwsze instalowalne APK MotoQuest.
-

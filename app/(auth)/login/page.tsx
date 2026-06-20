@@ -4,9 +4,9 @@ import AuthShell from "../../../components/AuthShell";
 export default function LoginPage() {
   return (
     <AuthShell
-      eyebrow="Panel logowania"
+      eyebrow="Panel kierowcy"
       title={<>Witaj w <span>MotoQuest</span></>}
-      subtitle="Zaloguj sie i kontynuuj swoja przygode"
+      subtitle="Odkrywaj swiat motocyklem"
     >
       <AuthLoginForm />
     </AuthShell>

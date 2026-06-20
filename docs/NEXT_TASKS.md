@@ -64,7 +64,7 @@ Sprawdzic przypisanie i zaliczenie misji.
 
 ## TASK-004: UI Premium - etap 1 - logowanie i rejestracja
 
-- Status: READY
+- Status: DONE
 - Priorytet: HIGH
 - Zrodlo: Uzytkownik
 - Data dodania: 2026-06-20
@@ -92,6 +92,12 @@ Ujednolicic wejscie do aplikacji w stylu premium bez zmiany Supabase Auth, sesji
 - Build przechodzi.
 - Formularze dzialaja na mobile i desktop.
 - Bledy, loading, disabled i powrot do profilu sa czytelne.
+
+### Wynik
+
+- Wdrozono dark premium UI dla logowania, rejestracji i resetu hasla.
+- Zachowano istniejaca logike Supabase Auth, OAuth i sesji.
+- `npm run build` zakonczony poprawnie 2026-06-20.
 
 ## TASK-005: UI Premium - etap 2 - profil
 
