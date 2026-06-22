@@ -3021,3 +3021,80 @@ textarea::placeholder {
     width: min(390px, 55vw);
   }
 }
+
+.mq-profile-hero-stat,
+.mq-profile-metric,
+.mq-xp-summary-card,
+.mq-badges-summary-card,
+.mq-achievements-summary-card,
+.mq-poland-map-summary-card,
+.mq-garage-hero-stat,
+.mq-garage-mini-metric,
+.mq-bike-profile-metric,
+.mq-ranking-premium-pill,
+.mq-xp-level-pill,
+.mq-badges-counter {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 72px;
+  text-align: left;
+}
+
+.mq-ranking-premium-pill,
+.mq-xp-level-pill,
+.mq-badges-counter {
+  justify-content: center;
+}
+
+.mq-profile-hero-stat span,
+.mq-profile-metric span,
+.mq-xp-summary-card span,
+.mq-badges-summary-card span,
+.mq-achievements-summary-card span,
+.mq-poland-map-summary-card span,
+.mq-garage-hero-stat span,
+.mq-garage-mini-metric span,
+.mq-bike-profile-metric span,
+.mq-ranking-premium-pill span,
+.mq-xp-level-pill span,
+.mq-badges-counter span {
+  width: 100%;
+  line-height: 1.25;
+}
+
+.mq-profile-hero-stat strong,
+.mq-profile-metric strong,
+.mq-xp-summary-card strong,
+.mq-badges-summary-card strong,
+.mq-achievements-summary-card strong,
+.mq-poland-map-summary-card strong,
+.mq-garage-hero-stat strong,
+.mq-garage-mini-metric strong,
+.mq-bike-profile-metric strong,
+.mq-ranking-premium-pill strong,
+.mq-xp-level-pill strong,
+.mq-badges-counter strong {
+  width: 100%;
+  margin-top: 6px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+  .mq-profile-hero-stat,
+  .mq-profile-metric,
+  .mq-xp-summary-card,
+  .mq-badges-summary-card,
+  .mq-achievements-summary-card,
+  .mq-poland-map-summary-card,
+  .mq-garage-hero-stat,
+  .mq-garage-mini-metric,
+  .mq-bike-profile-metric,
+  .mq-ranking-premium-pill,
+  .mq-xp-level-pill,
+  .mq-badges-counter {
+    min-height: 68px;
+  }
+}
