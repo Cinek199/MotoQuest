@@ -311,12 +311,12 @@ function FinishedTripCard({
           <TripRoutePreview route={trip.route} className="h-44 rounded-none border-0" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-400">
+        <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-3">
+          <div className="min-w-0 max-w-[calc(100%-5.8rem)]">
+            <div className="inline-flex rounded-full border border-orange-500/35 bg-black/55 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-orange-300 backdrop-blur">
               Wyprawa #{index + 1}
             </div>
-            <div className="mt-1 text-2xl font-black leading-tight text-white">
+            <div className="mt-2 break-words pr-1 text-xl font-black leading-tight text-white sm:text-2xl">
               {trip.name}
             </div>
             <div className="mt-1 text-xs font-bold text-zinc-300">
@@ -324,7 +324,7 @@ function FinishedTripCard({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-orange-500/30 bg-orange-500/15 px-3 py-2 text-right backdrop-blur">
+          <div className="shrink-0 rounded-2xl border border-orange-500/30 bg-orange-500/15 px-3 py-2 text-right backdrop-blur">
             <div className="text-[10px] font-black uppercase text-orange-300">
               XP
             </div>

@@ -11,6 +11,21 @@ type Badge = {
   name: string;
 };
 
+const BADGE_ICONS: Record<string, string> = {
+  mountain: "⛰️",
+  snow: "❄️",
+  storm: "⚡",
+  castle: "🏰",
+  coast: "🌊",
+  forest: "🌲",
+  lake: "🏞️",
+  city: "🏙️",
+  road: "🛣️",
+  photo: "📸",
+  night: "🌙",
+  sunrise: "🌅",
+};
+
 export default function SpecialBadgesPanel() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [completedBadgeIds, setCompletedBadgeIds] = useState<string[]>([]);
@@ -87,7 +102,7 @@ export default function SpecialBadgesPanel() {
         </div>
         <div className="mq-badges-summary-card">
           <span>Status kolekcji</span>
-          <strong>{badges.length ? `${Math.round((unlockedCount / badges.length) * 100)}%` : "0%"}</strong>
+          <strong>{badges.length ? Math.round((unlockedCount / badges.length) * 100) + "%" : "0%"}</strong>
         </div>
       </div>
 
@@ -111,8 +126,8 @@ export default function SpecialBadgesPanel() {
                 ].join(" ")}
               >
                 <div className="mq-badge-card-top">
-                  <span className="mq-badge-icon">
-                    {badge.icon?.trim() || badge.name.slice(0, 1).toUpperCase()}
+                  <span className="mq-badge-icon" aria-hidden="true">
+                    {getBadgeIcon(badge)}
                   </span>
                   <span className="mq-badge-state">
                     {unlocked ? "Zdobyta" : "Zablokowana"}
@@ -127,4 +142,14 @@ export default function SpecialBadgesPanel() {
       )}
     </section>
   );
+}
+
+function getBadgeIcon(badge: Badge) {
+  const raw = badge.icon?.trim().toLowerCase();
+
+  if (raw && BADGE_ICONS[raw]) {
+    return BADGE_ICONS[raw];
+  }
+
+  return badge.name.slice(0, 1).toUpperCase();
 }

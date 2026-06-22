@@ -4,6 +4,17 @@
 
 Brak otwartych zadan krytycznych.
 
+## Wyniki testu regresji UI Premium
+
+- Data: 2026-06-20
+- Status builda: PASS (`npm run build`)
+- Status systemow wysokiego ryzyka: PASS - brak diffow w `MapView.tsx`, `useMotoQuestTracking.ts`, `tiles.ts`, `playerService.ts`, `supabase.ts`, `auth.ts` i `android/`
+- Status tras HTTP: PASS - `/, /login, /register, /reset-password` zwracaja `200` na lokalnym serwerze
+- Status kontroli kodu UI: PASS - logika filtrow osiagniec, zwijania sekcji, rankingu RPC, garazu, profilu i auth pozostala spojna z zakresem zmian
+- Status responsywnosci mobilnej: PARTIAL - brak automatycznej weryfikacji viewportow i safe area z powodu ograniczen sandboxa przegladarki headless
+- Status interakcji z chmura i drugim urzadzeniem: PARTIAL - wymaga recznego testu logowania, uploadu zdjecia motocykla i synchronizacji na fizycznych telefonach
+- Wniosek: mozna bezpiecznie przejsc dalej z kolejnymi etapami UI, ale przed publikacja produkcyjna warto wykonac reczny przebieg na iPhone i Androidzie
+
 ## HIGH
 
 ### Baseline przed UI Premium
@@ -117,3 +128,11 @@ Brak otwartych zadan krytycznych.
 - Priorytet: LOW
 - Wplyw: utrzymanie kodu.
 - Opis: przeanalizowac starsze pliki `player*`, `achievements*` i `regions*`.
+
+## Mobile UI Fix Pack
+- [x] Safe area i status bar iPhone
+- [x] Bottom nav spacing dla scrollowanych ekranow
+- [x] Kompaktowa typografia mobile
+- [x] Poprawka kart wypraw i badge
+- [x] Polish MapHud
+- [ ] Manualny smoke test na iPhone i Androidzie

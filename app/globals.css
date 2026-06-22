@@ -2618,3 +2618,406 @@ textarea::placeholder {
     align-items: end;
   }
 }
+
+
+:root {
+  --bottom-nav-height: 86px;
+  --mq-safe-top: max(14px, env(safe-area-inset-top));
+  --mq-safe-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+.mq-app-shell {
+  padding-top: 0;
+}
+
+.mq-phone-frame {
+  padding-top: 0;
+}
+
+.mq-screen.mq-screen-safe {
+  padding-top: var(--mq-safe-top);
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
+}
+
+.mq-screen-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 56px;
+  padding-top: 2px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.7) 72%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mq-screen {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
+}
+
+.mq-map-active .mq-bottom-nav,
+.mq-bottom-nav {
+  height: calc(58px + env(safe-area-inset-bottom));
+}
+
+.mq-bottom-nav-grid {
+  padding-top: 0.12rem;
+  padding-bottom: calc(0.2rem + env(safe-area-inset-bottom));
+}
+
+.mq-bottom-nav-item {
+  min-height: 42px;
+  gap: 0.12rem;
+  font-size: 9px;
+}
+
+.mq-bottom-nav-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.mq-bottom-nav-icon svg {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.mq-map-hud-top {
+  top: var(--mq-safe-top);
+}
+
+.mq-map-controls {
+  top: calc(var(--mq-safe-top) + 8.15rem);
+  right: max(0.7rem, env(safe-area-inset-right));
+}
+
+.mq-map-region-card {
+  width: min(15rem, calc(100vw - 1.35rem));
+}
+
+.mq-map-region-card-inner {
+  padding: 0.42rem 0.55rem;
+  gap: 0.55rem;
+}
+
+.mq-map-region-content .mq-map-region-eyebrow {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+}
+
+.mq-map-region-content .mq-map-region-name {
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.mq-map-region-progress {
+  margin-top: 0.2rem;
+}
+
+.mq-recording-panel {
+  inset-inline: 0.8rem;
+  bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) - 10px);
+}
+
+.mq-profile-guest,
+.mq-profile-panel,
+.mq-badges-panel,
+.mq-xp-panel,
+.mq-cloud-panel,
+.mq-garage-panel,
+.mq-bike-profile-panel,
+.mq-achievements-panel,
+.mq-poland-map-panel,
+.mq-ranking-premium {
+  scroll-margin-top: calc(var(--mq-safe-top) + 64px);
+}
+
+.mq-profile-guest {
+  padding: 18px 16px;
+  gap: 14px;
+}
+
+.mq-profile-guest-mark {
+  width: 76px;
+  height: 76px;
+  font-size: 1.6rem;
+}
+
+.mq-profile-guest-copy h2,
+.mq-profile-hero-copy h2,
+.mq-garage-hero h2,
+.mq-bike-profile-head h2,
+.mq-achievements-head h2,
+.mq-badges-panel-head h2,
+.mq-xp-panel-head h2,
+.mq-cloud-panel-head h2 {
+  font-size: clamp(1.5rem, 7vw, 2.2rem);
+  line-height: 1.05;
+}
+
+.mq-profile-guest-copy p,
+.mq-profile-hero-copy p,
+.mq-garage-hero p,
+.mq-bike-profile-head p,
+.mq-achievements-head p,
+.mq-badges-panel-head p,
+.mq-xp-panel-head p,
+.mq-cloud-panel-head p {
+  font-size: 12px;
+}
+
+.mq-profile-guest-actions {
+  grid-template-columns: 1fr;
+}
+
+.mq-profile-hero,
+.mq-profile-card-surface,
+.mq-badges-panel,
+.mq-xp-panel,
+.mq-cloud-panel,
+.mq-garage-panel,
+.mq-bike-profile-panel,
+.mq-achievements-panel,
+.mq-poland-map-panel,
+.mq-ranking-premium {
+  padding: 14px;
+}
+
+.mq-profile-hero {
+  gap: 12px;
+}
+
+.mq-profile-metrics,
+.mq-profile-grid,
+.mq-profile-shortcuts,
+.mq-badges-summary,
+.mq-xp-summary,
+.mq-achievements-summary,
+.mq-poland-map-summary,
+.mq-garage-hero-stats,
+.mq-garage-hero-bike-metrics,
+.mq-bike-profile-stats {
+  gap: 8px;
+}
+
+.mq-profile-metric,
+.mq-profile-card-surface,
+.mq-badges-summary-card,
+.mq-xp-summary-card,
+.mq-achievements-summary-card,
+.mq-poland-map-summary-card,
+.mq-garage-hero-stat,
+.mq-garage-mini-metric,
+.mq-bike-profile-metric {
+  padding: 10px;
+}
+
+.mq-profile-metric strong,
+.mq-achievements-summary-card strong,
+.mq-poland-map-summary-card strong,
+.mq-garage-hero-stat strong,
+.mq-garage-mini-metric strong,
+.mq-bike-profile-metric strong,
+.mq-xp-summary-card strong {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
+.mq-xp-panel-head,
+.mq-badges-panel-head,
+.mq-achievements-head,
+.mq-poland-map-head,
+.mq-ranking-premium-head,
+.mq-garage-hero,
+.mq-bike-profile-head {
+  gap: 10px;
+  padding: 14px;
+}
+
+.mq-xp-track {
+  height: 12px;
+}
+
+.mq-badges-grid {
+  gap: 10px;
+}
+
+.mq-badge-card {
+  padding: 12px;
+  min-height: 0;
+}
+
+.mq-badge-card-top {
+  margin-bottom: 8px;
+}
+
+.mq-badge-icon {
+  font-size: 1.2rem;
+}
+
+.mq-badge-state {
+  font-size: 9px;
+}
+
+.mq-achievements-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 6px;
+  scrollbar-width: none;
+}
+
+.mq-achievements-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mq-achievements-tabs button {
+  flex: 0 0 auto;
+  min-width: max-content;
+  padding-inline: 12px;
+}
+
+.mq-achievement-card {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+}
+
+.mq-achievement-card-mark span {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.mq-achievement-card-top strong {
+  font-size: 0.95rem;
+}
+
+.mq-achievement-card-top em {
+  padding: 6px 8px;
+  font-size: 9px;
+}
+
+.mq-garage-hero-bike-media,
+.mq-bike-profile-media {
+  min-height: 210px;
+}
+
+.mq-garage-hero-bike-fallback,
+.mq-bike-profile-fallback {
+  height: 210px;
+}
+
+.mq-garage-hero-bike-status {
+  top: 10px;
+  right: 10px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 9px;
+}
+
+.mq-garage-bike-card-media {
+  height: 160px;
+}
+
+.mq-garage-bike-card-fallback {
+  height: 160px;
+}
+
+.mq-auth-page {
+  padding-top: max(18px, env(safe-area-inset-top));
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+.mq-auth-card {
+  width: min(430px, 100%);
+  padding: clamp(18px, 4.8vw, 28px);
+}
+
+.mq-auth-logo-frame {
+  width: 94px;
+  height: 94px;
+}
+
+.mq-auth-logo {
+  width: 76px;
+  height: 76px;
+}
+
+.mq-auth-title {
+  font-size: clamp(1.8rem, 7vw, 2.5rem);
+}
+
+.mq-auth-subtitle {
+  font-size: 12px;
+}
+
+.mq-auth-socials {
+  grid-template-columns: 1fr;
+}
+
+.mq-auth-back {
+  margin-top: 14px;
+}
+
+@media (min-width: 560px) {
+  .mq-auth-socials {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mq-profile-guest-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .mq-screen.mq-screen-safe {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 18px);
+  }
+
+  .mq-map-region-card {
+    width: min(14.2rem, calc(100vw - 1.1rem));
+  }
+
+  .mq-map-controls {
+    top: calc(var(--mq-safe-top) + 7.65rem);
+  }
+
+  .mq-recording-panel {
+    inset-inline: 0.65rem;
+  }
+}
+
+@media (orientation: portrait) {
+  .mq-map-active .mq-map-controls {
+    right: max(0.6rem, env(safe-area-inset-right));
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 10px);
+    top: auto;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .mq-screen.mq-screen-safe {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: calc(54px + env(safe-area-inset-bottom) + 16px);
+  }
+
+  .mq-map-hud-top {
+    top: max(0.35rem, env(safe-area-inset-top));
+  }
+
+  .mq-map-controls {
+    top: calc(max(0.35rem, env(safe-area-inset-top)) + 5.2rem);
+    right: max(0.35rem, env(safe-area-inset-right));
+  }
+
+  .mq-map-region-card {
+    width: min(13.8rem, 34vw);
+  }
+
+  .mq-recording-panel {
+    bottom: 0.35rem;
+    width: min(390px, 55vw);
+  }
+}

@@ -78,7 +78,7 @@ export default function MapHud({
 
   return (
     <>
-      <div className="mq-map-hud-top pointer-events-none absolute inset-x-3 top-3 z-20">
+      <div className="mq-map-hud-top pointer-events-none absolute inset-x-3 z-20">
         <div className="flex items-center justify-between gap-3">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-orange-500/35 bg-black/82 text-sm font-black text-orange-500 shadow-2xl backdrop-blur-xl">
             {profile.avatarUrl ? (
@@ -154,7 +154,7 @@ export default function MapHud({
         </section>
       </div>
 
-      <div className="mq-map-controls pointer-events-none absolute right-3 top-[188px] z-20 flex flex-col gap-3">
+      <div className="mq-map-controls pointer-events-none absolute right-3 z-20 flex flex-col gap-3">
         <HudRoundButton ariaLabel="Warstwy mapy" onClick={() => setLayersOpen((value) => !value)}><LayersIcon /></HudRoundButton>
         <HudRoundButton active={gpsReady} label="GPS" sublabel={gpsReady ? "ON" : "..."} />
         <HudRoundButton
@@ -180,10 +180,10 @@ export default function MapHud({
       </div>
 
       {layersOpen && <div className="mq-map-layers">
-        <div className="mq-map-layers-head"><b>Warstwy mapy</b><button onClick={() => setLayersOpen(false)}>×</button></div>
+        <div className="mq-map-layers-head"><b>Warstwy mapy</b><button type="button" aria-label="Zamknij warstwy mapy" onClick={() => setLayersOpen(false)}>×</button></div>
         <LayerToggle title="Mgla odkrycia" subtitle="Ukrywa nieodkryty teren" active={fogEnabled} onClick={onToggleFog}/>
         <LayerToggle title="Nazwy i drogi" subtitle="Etykiety podkladu mapy" active={labelsEnabled} onClick={onToggleLabels}/>
-        <LayerToggle title="Granice odkryc" subtitle="Pomarańczowy obrys terenu" active={boundaryEnabled} onClick={onToggleBoundary}/>
+        <LayerToggle title="Granice odkryc" subtitle="Pomaranczowy obrys terenu" active={boundaryEnabled} onClick={onToggleBoundary}/>
       </div>}
 
       {activeTrip && (

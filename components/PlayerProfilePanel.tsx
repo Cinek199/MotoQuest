@@ -332,7 +332,7 @@ export default function PlayerProfilePanel({
           </strong>
           <p className="mq-profile-card-copy">
             {lastTrip
-              ? `${lastTrip.date} • ${lastTrip.distance.toFixed(1)} km • +${lastTrip.xp} XP`
+              ? `${lastTrip.date} - ${lastTrip.distance.toFixed(1)} km - +${lastTrip.xp} XP`
               : "Rozpocznij wyprawe, aby zapisac pierwszy slad odkrywcy."}
           </p>
           <div className="mq-profile-card-meta">

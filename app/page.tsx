@@ -136,21 +136,21 @@ export default function Home() {
         )}
 
         {activeTab === "tasks" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Zadania" />
             <CityMissionsPanel />
           </section>
         )}
 
         {activeTab === "trips" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Wyprawy" />
             <TripsPanel />
           </section>
         )}
 
         {activeTab === "achievements" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Odznaki" />
             <CollapsibleSection title="Osiagniecia i wyzwania"><AchievementsPanel /></CollapsibleSection>
             <CollapsibleSection title="Mapa Polski"><PolandMap /></CollapsibleSection>
@@ -159,7 +159,7 @@ export default function Home() {
         )}
 
         {activeTab === "garage" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Garaz" />
             <div className="grid gap-3">
               <GaragePanel />
@@ -169,7 +169,7 @@ export default function Home() {
         )}
 
         {activeTab === "profile" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Profil" action="gear" onAction={() => setActiveTab("settings")} />
             <PlayerProfilePanel stats={stats} />
             <SpecialBadgesPanel />
@@ -180,21 +180,21 @@ export default function Home() {
         )}
 
         {activeTab === "ranking" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Ranking" />
             <LeaderboardPanel />
           </section>
         )}
 
         {activeTab === "settings" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Ustawienia" back onAction={() => setActiveTab("profile")} />
             <SettingsPanel />
           </section>
         )}
 
         {activeTab === "notifications" && (
-          <section className="mq-screen space-y-3">
+          <section className="mq-screen mq-screen-safe space-y-3">
             <ScreenHeader title="Powiadomienia" />
             <NotificationsPanel />
           </section>
@@ -218,14 +218,14 @@ function ScreenHeader({
   title: string;
 }) {
   return (
-    <header className="grid h-14 grid-cols-[44px_1fr_44px] items-center">
+    <header className="mq-screen-header grid h-14 grid-cols-[44px_1fr_44px] items-center">
       <button
         type="button"
         aria-label={back ? "Wroc" : "Menu"}
         onClick={back ? onAction : undefined}
         className={["flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300", back ? "mq-screen-back" : ""].join(" ")}
       >
-        <span className="text-2xl leading-none">≡</span>
+        {back ? <ArrowLeftIcon /> : <MenuIcon />}
       </button>
 
       <h1 className="truncate text-center text-lg font-black text-white">
@@ -357,6 +357,25 @@ function BottomNavigation({
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h12" />
+    </svg>
+  );
+}
+
+function ArrowLeftIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+      <path d="M9 12h10" />
+    </svg>
+  );
+}
+
 function NavIcon({ id }: { id: TabId }) {
   const common = {
     className: "h-5 w-5",
@@ -442,7 +461,7 @@ function CollapsibleSection({ children, title }: { children: React.ReactNode; ti
   return (
     <section className="mq-collapsible">
       <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-        <span>{title}</span><b>{open ? "−" : "+"}</b>
+        <span>{title}</span><b>{open ? "-" : "+"}</b>
       </button>
       {open && <div className="mq-collapsible-content">{children}</div>}
     </section>

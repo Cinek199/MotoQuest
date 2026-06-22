@@ -258,3 +258,41 @@ Ujednolicic wizualnie osiagniecia, mape Polski i ranking.
 - Wdrozono premium UI dla osiagniec, specjalnych odznak, mapy Polski i rankingu.
 - Zachowano filtry, zwijanie sekcji, ranking RPC i herby wojewodztw.
 - `npm run build` zakonczony poprawnie 2026-06-20.
+
+## TASK-010: Manualny test regresji UI Premium na urzadzeniach
+
+- Status: READY
+- Priorytet: HIGH
+- Zrodlo: Codex
+- Data dodania: 2026-06-20
+
+### Cel
+
+Potwierdzic na fizycznych urzadzeniach brak regresji po etapach Auth, Profile, Garage, Achievements i Ranking.
+
+### Zakres
+
+- iPhone maly i duzy ekran
+- Android maly i duzy ekran
+- PWA standalone
+- safe area
+- wysunieta klawiatura
+- pion i poziom
+- logowanie, rejestracja, reset hasla
+- profil zalogowany i niezalogowany
+- ustawienia profilu
+- garaz, upload zdjecia motocykla i aktywna maszyna
+- osiagniecia, filtry, zwijanie sekcji, mapa Polski i ranking
+
+### Kryteria ukonczenia
+
+- Wszystkie kluczowe widoki sa czytelne na mobile i desktop.
+- Nie ma uciec elementow przy safe area i klawiaturze.
+- Upload motocykla, logowanie i synchronizacja zachowuja sie poprawnie na fizycznych telefonach.
+
+## TASK-011: Manualny smoke test Mobile UI Fix Pack
+- Status: READY
+- Priorytet: HIGH
+- Zrodlo: Codex
+- Data dodania: 2026-06-21
+- Zakres: iPhone / Android, profil, auth, wyprawy, garaz, odznaki, mapa pion/poziom po poprawkach safe area i bottom nav

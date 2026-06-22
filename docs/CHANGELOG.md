@@ -53,3 +53,11 @@
 ## 1.0 - 2026-06-18
 
 - Pierwsze instalowalne APK MotoQuest.
+
+## 1.4 - Mobile UI Fix Pack
+- Naprawiono safe area i status bar na iPhone.
+- Poprawiono spacing nad headerem i pod dolna nawigacja.
+- Zmniejszono typografie i wysokosci kart na mobile.
+- Poprawiono odznaki specjalne, ikony i karty osiagniec.
+- Poprawiono badge wypraw oraz responsywnosc kart.
+- Dopracowano MapHud bez zmiany MapView, GPS i Fog of Discovery.
