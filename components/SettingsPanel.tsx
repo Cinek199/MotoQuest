@@ -24,10 +24,27 @@ const options = [
   ],
 ] as const;
 
+function detectIosPwa() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const standalone =
+    window.matchMedia?.("(display-mode: standalone)").matches === true ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  const isIos =
+    /iPad|iPhone|iPod/.test(window.navigator.userAgent) ||
+    (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+
+  return standalone && isIos;
+}
+
 export default function SettingsPanel() {
   const [values, setValues] = useState<Record<string, boolean>>({});
   const [nickname, setNickname] = useState("");
   const [status, setStatus] = useState("");
+  const [showIosPwaNotice, setShowIosPwaNotice] = useState(false);
 
   useEffect(() => {
     setValues(
@@ -36,6 +53,7 @@ export default function SettingsPanel() {
       )
     );
     setNickname(getProfile().nickname);
+    setShowIosPwaNotice(detectIosPwa());
   }, []);
 
   const toggle = (key: string) => {
@@ -148,6 +166,16 @@ export default function SettingsPanel() {
           ))}
         </div>
       </div>
+
+      {showIosPwaNotice ? (
+        <div className="mq-settings-notice" role="note" aria-label="Informacja o iPhone PWA">
+          <strong>iPhone PWA</strong>
+          <p>
+            Na iPhone odkrywanie trasy dziala najpewniej przy aktywnym ekranie.
+            iOS moze wstrzymac PWA po zablokowaniu ekranu.
+          </p>
+        </div>
+      ) : null}
 
       <div className="mq-settings-group">
         <div className="mq-settings-group-head">

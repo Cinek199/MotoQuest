@@ -11,7 +11,7 @@ import {
 } from "../lib/nativeAndroid";
 import { savePlayer } from "../lib/playerService";
 import { supabase } from "../lib/supabase";
-import { createTilePolygon, TILE_SIZE } from "../lib/tiles";
+import { TILE_SIZE } from "../lib/tiles";
 import { ActiveTrip, finishActiveTrip, getActiveTrip } from "../lib/trips";
 import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
@@ -20,6 +20,12 @@ const MAP_STYLE =
 const FOG_DRIFT_X = 0.00058;
 const FOG_DRIFT_Y = 0.00036;
 const FOG_MAP_PARALLAX = 0.28;
+const NORMAL_FOG_SYNC_MS = 120;
+const LOW_POWER_FOG_SYNC_MS = 320;
+const LOW_POWER_REVEAL_LIMIT = 140;
+const NORMAL_REVEAL_LIMIT = 360;
+const LOW_POWER_BOUNDARY_LIMIT = 180;
+const NORMAL_BOUNDARY_LIMIT = 520;
 
 type ScreenPoint = {
   x: number;
@@ -72,33 +78,9 @@ export default function MapView({
       setFogTextureOffset
     );
 
-    if (map.getSource(sourceId)) {
-      return;
-    }
-
-    const [tileX, tileY] = tileId.split("_").map(Number);
-
-    map.addSource(sourceId, {
-      type: "geojson",
-      data: {
-        type: "Feature",
-        geometry: {
-          type: "Polygon",
-          coordinates: [createTilePolygon(tileX, tileY)],
-        },
-        properties: {},
-      },
-    });
-
-    map.addLayer({
-      id: sourceId,
-      type: "fill",
-      source: sourceId,
-      paint: {
-        "fill-color": "#ffffff",
-        "fill-opacity": 0,
-      },
-    });
+    // Discovered tiles are rendered by the fog canvas. Adding one invisible
+    // MapLibre source/layer per tile makes gestures very slow on low-end Android.
+    void sourceId;
   }, []);
 
   const {
@@ -182,7 +164,10 @@ export default function MapView({
       fogSyncFrame = window.requestAnimationFrame(() => {
         fogSyncFrame = 0;
         const now = performance.now();
-        if (now - lastFogSync < 90) return;
+        const syncDelay = isLowPowerDevice()
+          ? LOW_POWER_FOG_SYNC_MS
+          : NORMAL_FOG_SYNC_MS;
+        if (now - lastFogSync < syncDelay) return;
         lastFogSync = now;
         updateFogOverlay(
           map,
@@ -419,6 +404,18 @@ export default function MapView({
   );
 }
 
+function isLowPowerDevice() {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4;
+  const cores = navigator.hardwareConcurrency || 4;
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  return memory <= 3 || cores <= 4 || userAgent.includes("p20 lite");
+}
+
 function updateFogOverlay(
   map: maplibregl.Map,
   discoveredTileIds: Set<string>,
@@ -439,9 +436,30 @@ function updateFogOverlay(
   >();
   const revealTiles: FogRevealTile[] = [];
   const boundaryEdges: FogBoundaryEdge[] = [];
-  const discoveredCoords = [...discoveredTileIds].map((tileId) =>
-    tileId.split("_").map(Number)
-  );
+  const lowPower = isLowPowerDevice();
+  const maxRevealTiles = lowPower ? LOW_POWER_REVEAL_LIMIT : NORMAL_REVEAL_LIMIT;
+  const maxBoundaryEdges = lowPower ? LOW_POWER_BOUNDARY_LIMIT : NORMAL_BOUNDARY_LIMIT;
+  const revealRadius = lowPower ? 1 : 2;
+  const clearByDistance = lowPower ? [1, 0.24] : [1, 0.36, 0.12];
+  const expandedWest = bounds.getWest() - TILE_SIZE * (revealRadius + 1);
+  const expandedEast = bounds.getEast() + TILE_SIZE * (revealRadius + 1);
+  const expandedSouth = bounds.getSouth() - TILE_SIZE * (revealRadius + 1);
+  const expandedNorth = bounds.getNorth() + TILE_SIZE * (revealRadius + 1);
+  const discoveredCoords = [...discoveredTileIds]
+    .map((tileId) => tileId.split("_").map(Number))
+    .filter(([tileX, tileY]) => {
+      const tileWest = tileX * TILE_SIZE;
+      const tileEast = tileWest + TILE_SIZE;
+      const tileSouth = tileY * TILE_SIZE;
+      const tileNorth = tileSouth + TILE_SIZE;
+
+      return (
+        tileEast >= expandedWest &&
+        tileWest <= expandedEast &&
+        tileNorth >= expandedSouth &&
+        tileSouth <= expandedNorth
+      );
+    });
   const worldAnchor = map.project([0, 0]);
 
   setFogTextureOffset({
@@ -450,10 +468,9 @@ function updateFogOverlay(
   });
 
   discoveredCoords.forEach(([tileX, tileY]) => {
-    for (let xOffset = -2; xOffset <= 2; xOffset += 1) {
-      for (let yOffset = -2; yOffset <= 2; yOffset += 1) {
+    for (let xOffset = -revealRadius; xOffset <= revealRadius; xOffset += 1) {
+      for (let yOffset = -revealRadius; yOffset <= revealRadius; yOffset += 1) {
         const distance = Math.max(Math.abs(xOffset), Math.abs(yOffset));
-        const clearByDistance = [1, 0.36, 0.12];
         const clear = clearByDistance[distance] ?? 0;
 
         if (clear <= 0) {
@@ -511,6 +528,10 @@ function updateFogOverlay(
       return;
     }
 
+    if (revealTiles.length >= maxRevealTiles) {
+      return;
+    }
+
     revealTiles.push({
       clear,
       points,
@@ -563,6 +584,10 @@ function updateFogOverlay(
       const from = map.project(edge.from);
       const to = map.project(edge.to);
 
+      if (boundaryEdges.length >= maxBoundaryEdges) {
+        return;
+      }
+
       boundaryEdges.push({
         from,
         to,
@@ -586,7 +611,18 @@ function MapFogOverlay({
   showBoundary: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const boundaryEdgesRef = useRef(boundaryEdges);
+  const revealTilesRef = useRef(revealTiles);
+  const showBoundaryRef = useRef(showBoundary);
+  const textureOffsetRef = useRef(textureOffset);
   const [fogTexture, setFogTexture] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    boundaryEdgesRef.current = boundaryEdges;
+    revealTilesRef.current = revealTiles;
+    showBoundaryRef.current = showBoundary;
+    textureOffsetRef.current = textureOffset;
+  }, [boundaryEdges, revealTiles, showBoundary, textureOffset]);
 
   useEffect(() => {
     const image = new Image();
@@ -602,49 +638,67 @@ function MapFogOverlay({
       return;
     }
 
-    const rect = canvas.getBoundingClientRect();
-    const lowPower = (navigator.hardwareConcurrency || 4) <= 4 || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4) <= 3;
-    const dpr = lowPower ? 0.75 : Math.min(1.25, window.devicePixelRatio || 1);
-    const width = Math.max(1, rect.width);
-    const height = Math.max(1, rect.height);
-
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { alpha: true });
 
     if (!context) {
       return;
     }
 
+    const lowPower = isLowPowerDevice();
+    const dpr = lowPower ? 0.55 : Math.min(1.15, window.devicePixelRatio || 1);
     let animationFrame = 0;
     let lastPaint = 0;
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+
+    const resizeCanvasIfNeeded = () => {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      const nextCanvasWidth = Math.round(width * dpr);
+      const nextCanvasHeight = Math.round(height * dpr);
+
+      if (canvas.width !== nextCanvasWidth || canvas.height !== nextCanvasHeight) {
+        canvas.width = nextCanvasWidth;
+        canvas.height = nextCanvasHeight;
+        canvasWidth = width;
+        canvasHeight = height;
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      return { height, width };
+    };
 
     const paint = (time: number) => {
-      if (time - lastPaint < (lowPower ? 280 : 140)) {
+      const minFrameTime = lowPower ? 420 : 170;
+
+      if (time - lastPaint < minFrameTime) {
         animationFrame = window.requestAnimationFrame(paint);
         return;
       }
 
       lastPaint = time;
+      const { height, width } = resizeCanvasIfNeeded();
+      canvasWidth = width;
+      canvasHeight = height;
       drawFogCanvas(
         context,
         fogTexture,
-        width,
-        height,
-        revealTiles,
-        showBoundary ? boundaryEdges : [],
-        textureOffset,
+        canvasWidth,
+        canvasHeight,
+        revealTilesRef.current,
+        showBoundaryRef.current ? boundaryEdgesRef.current : [],
+        textureOffsetRef.current,
         time
       );
       animationFrame = window.requestAnimationFrame(paint);
     };
 
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    resizeCanvasIfNeeded();
     animationFrame = window.requestAnimationFrame(paint);
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [boundaryEdges, fogTexture, revealTiles, showBoundary, textureOffset]);
+  }, [fogTexture]);
 
   return (
     <canvas

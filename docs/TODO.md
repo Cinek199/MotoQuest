@@ -146,3 +146,25 @@ Brak otwartych zadan krytycznych.
 - [x] Spowolnic dryf mgly po tescie iPhone
 - [ ] Zweryfikowac spowolniona mgle na iPhone
 - [ ] Android: fizyczny test mapy, mgly, GPS i background tracking
+- [ ] Android P20 Lite map performance retest po optymalizacji MapLibre/Fog
+
+## TASK-013 - Android background GPS test
+- [ ] Uruchomic aktualne APK na Androidzie
+- [ ] Przyznac uprawnienia lokalizacji podczas uzywania aplikacji
+- [ ] Przyznac lokalizacje caly czas, jesli aplikacja tego wymaga
+- [ ] Sprawdzic mape przy otwartym ekranie
+- [ ] Zablokowac ekran na 3-5 minut podczas ruchu
+- [ ] Wrocic do aplikacji i sprawdzic, czy punkty GPS zostaly nadrobione
+- [ ] Sprawdzic, czy kafelki odkryly trase
+- [ ] Sprawdzic, czy dystans naliczyl sie poprawnie
+- [ ] Sprawdzic, czy wyprawa zapisala punkty
+- [ ] Sprawdzic, czy aplikacja nie crashuje po powrocie
+- [ ] Sprawdzic zuzycie baterii
+- [ ] Jesli mozliwe, sprawdzic zachowanie po ubiciu aplikacji przez system
+- PASS: Android nie gubi GPS po krotkim zablokowaniu ekranu, trasa zostaje zachowana, mgla i kafelki odkrywaja przejazd, dystans jest poprawny, aplikacja nie crashuje.
+- FAIL: po zablokowaniu ekranu trasa sie nie zapisuje, kafelki nie odkrywaja przejazdu, wyprawa sie resetuje, GPS zatrzymuje sie bez informacji albo aplikacja crashuje po powrocie.
+
+## Ograniczenie iPhone PWA - background tracking
+- iPhone PWA nie gwarantuje sledzenia przy zablokowanym ekranie.
+- Dla iPhone PWA zalecane jest trzymanie ekranu aktywnego podczas odkrywania.
+- Pelne sledzenie w tle na iOS wymaga aplikacji natywnej albo innego rozwiazania zgodnego z ograniczeniami iOS.

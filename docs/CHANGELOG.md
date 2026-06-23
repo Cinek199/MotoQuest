@@ -1,3 +1,14 @@
+# 1.4 - Android map performance fix - 2026-06-23
+
+- Zoptymalizowano ekran mapy pod slabsze telefony Android, w tym Huawei P20 Lite.
+- Usunieto niewidoczne warstwy MapLibre tworzone dla kazdego odkrytego kafelka.
+- Ograniczono przeliczanie Fog of Discovery do widocznego obszaru mapy i zmniejszono koszt canvas fog na low-end Android.
+
+# 1.4 - TASK-013 Android background GPS prep - 2026-06-23
+
+- Przygotowano plan fizycznego testu Android background GPS dla APK/Capacitor.
+- Udokumentowano ograniczenie iPhone PWA background tracking: po zablokowaniu ekranu iOS moze wstrzymac aplikacje.
+- Dodano zalecenie UX, aby na iPhone PWA odkrywac z aktywnym ekranem.
 # 1.4 - TASK-012 iPhone GPS/map pretest - 2026-06-23
 
 - Fizyczny test iPhone PWA potwierdzil stabilna mape, gesty, centrowanie, marker i HUD.

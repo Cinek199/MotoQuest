@@ -353,4 +353,57 @@ Potwierdzic, ze mapa MapLibre, Fog of Discovery, sledzenie GPS, odkrywanie kafel
 ### Kolejny krok
 
 - zweryfikowac spowolniona mgle na iPhone
-- wykonac osobny test Android/background tracking, gdzie natywny modul moze nadrobic punkty GPS z tla
+- wykonac TASK-013: Android background GPS test
+- uwzglednic ograniczenie iPhone PWA: przy zablokowanym ekranie iOS moze wstrzymac PWA w tle, dlatego na iPhonie zalecane jest odkrywanie z aktywnym ekranem
+
+### Android P20 Lite performance result
+
+- Huawei P20 Lite: FAIL przed optymalizacja - mapa dzialala bardzo slabo, gesty przesuwania praktycznie nie byly uzywalne.
+- Wykonano optymalizacje renderingowe: usunieto niewidoczne warstwy kafelkow MapLibre, ograniczono przeliczenia mgly do widocznego obszaru i zmniejszono koszt canvas fog na slabszych urzadzeniach.
+- Wymagany ponowny test fizyczny po wdrozeniu nowej wersji APK/PWA.
+
+## TASK-013: Android background GPS test
+
+- Status: READY
+- Priorytet: HIGH
+- Zrodlo: Codex
+- Data dodania: 2026-06-23
+
+### Cel
+
+Potwierdzic, ze Android APK/Capacitor poprawnie sledzi GPS, odkrywa kafelki i zapisuje trase po zablokowaniu ekranu oraz po powrocie do aplikacji.
+
+### Zakres
+
+- uruchomienie APK na Androidzie
+- przyznanie uprawnien lokalizacji
+- test lokalizacji tylko podczas uzywania aplikacji
+- test lokalizacji caly czas, jesli aplikacja tego wymaga
+- mapa otwarta na ekranie
+- ekran zablokowany przez 3-5 minut podczas ruchu
+- powrot do aplikacji
+- sprawdzenie, czy punkty GPS zostaly nadrobione
+- sprawdzenie, czy kafelki odkryly trase
+- sprawdzenie, czy dystans sie naliczyl
+- sprawdzenie, czy wyprawa zapisala punkty
+- sprawdzenie, czy aplikacja nie crashuje
+- sprawdzenie zuzycia baterii
+- test po ubiciu aplikacji przez system, jesli mozliwe
+
+### Kryteria PASS
+
+- Android nie gubi GPS po krotkim zablokowaniu ekranu
+- po powrocie do aplikacji trasa jest zachowana
+- kafelki odkrywaja przejazd
+- dystans nalicza sie poprawnie
+- mgla odkrywa przejechana trase
+- aplikacja nie crashuje
+- dane zapisuja sie lokalnie i/lub w Supabase zgodnie z obecna logika
+
+### Kryteria FAIL
+
+- po zablokowaniu ekranu trasa nie zapisuje sie
+- kafelki nie odkrywaja przejazdu
+- aplikacja resetuje wyprawe
+- GPS przestaje dzialac bez informacji dla uzytkownika
+- aplikacja crashuje po powrocie z tla
