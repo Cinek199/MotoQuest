@@ -135,4 +135,14 @@ Brak otwartych zadan krytycznych.
 - [x] Kompaktowa typografia mobile
 - [x] Poprawka kart wypraw i badge
 - [x] Polish MapHud
-- [ ] Manualny smoke test na iPhone i Androidzie
+- [x] Manualny smoke test na iPhone
+- [ ] Manualny smoke test na Androidzie
+- Notatka: PWA na iPhone po Mobile UI Fix Pack wyglada poprawnie; profil, auth, osiagniecia, wyprawy, garaz, mapa pion/poziom, bottom nav i safe area przeszly reczny test.
+
+## TASK-012 - Fizyczny test mapy, mgly i GPS
+- [x] iPhone PWA: mapa pionowo, poziomo, gesty, zoom, centrowanie, marker i HUD
+- [x] iPhone PWA: marker podczas jazdy dziala plynnie
+- [x] iPhone PWA: rozpoznano ograniczenie pracy w tle po zablokowaniu ekranu
+- [x] Spowolnic dryf mgly po tescie iPhone
+- [ ] Zweryfikowac spowolniona mgle na iPhone
+- [ ] Android: fizyczny test mapy, mgly, GPS i background tracking

@@ -291,8 +291,66 @@ Potwierdzic na fizycznych urzadzeniach brak regresji po etapach Auth, Profile, G
 - Upload motocykla, logowanie i synchronizacja zachowuja sie poprawnie na fizycznych telefonach.
 
 ## TASK-011: Manualny smoke test Mobile UI Fix Pack
-- Status: READY
+- Status: PARTIAL
 - Priorytet: HIGH
 - Zrodlo: Codex
 - Data dodania: 2026-06-21
 - Zakres: iPhone / Android, profil, auth, wyprawy, garaz, odznaki, mapa pion/poziom po poprawkach safe area i bottom nav
+
+### Wynik
+
+- iPhone PWA smoke test PASS.
+- Android pozostaje do fizycznej weryfikacji.
+
+## TASK-012: Fizyczny test mapy, mgly i GPS
+
+- Status: PARTIAL
+- Priorytet: HIGH
+- Zrodlo: Codex
+- Data dodania: 2026-06-23
+
+### Cel
+
+Potwierdzic, ze mapa MapLibre, Fog of Discovery, sledzenie GPS, odkrywanie kafelkow, obrot mapy i dolny HUD dzialaja stabilnie na fizycznym telefonie.
+
+### Zakres testu
+
+- mapa pionowo
+- mapa poziomo
+- gesty mapy
+- zoom
+- centrowanie GPS
+- obrot mapy wedlug kierunku ruchu
+- marker gracza
+- Fog of Discovery
+- odkrywanie kafelkow
+- panel warstw
+- dolna nawigacja na mapie
+- zuzycie baterii
+- plynnosc na telefonie
+- dzialanie po zablokowaniu ekranu
+- powrot do aplikacji po kilku minutach
+
+### Kryteria ukonczenia
+
+- mapa nie zacina sie podczas przesuwania
+- marker GPS aktualizuje sie poprawnie
+- kafelki odkrywaja sie po ruchu
+- mgla dziala i nie zaslania odkrytych kafelkow
+- dolna nawigacja nie przeszkadza w uzywaniu mapy
+- aplikacja nie crashuje po powrocie z tla
+- GPS nie gubi sledzenia przy krotkim zablokowaniu ekranu
+
+### Wynik testu iPhone PWA
+
+- mapa pionowo: PASS
+- mapa poziomo: PASS
+- gesty, zoom, centrowanie, marker i dolny HUD: PASS
+- marker podczas jazdy dziala plynnie: PASS
+- po powrocie do aplikacji PWA na iPhone odswieza tylko aktualny kafelek; przejazd przy zablokowanym ekranie nie odkrywa trasy, bo iOS wstrzymuje PWA w tle
+- mgla dzialala, ale dryf wizualny byl zbyt szybki; tempo dryfu zostalo spowolnione po tescie
+
+### Kolejny krok
+
+- zweryfikowac spowolniona mgle na iPhone
+- wykonac osobny test Android/background tracking, gdzie natywny modul moze nadrobic punkty GPS z tla

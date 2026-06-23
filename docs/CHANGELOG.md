@@ -1,3 +1,12 @@
+# 1.4 - TASK-012 iPhone GPS/map pretest - 2026-06-23
+
+- Fizyczny test iPhone PWA potwierdzil stabilna mape, gesty, centrowanie, marker i HUD.
+- Spowolniono dryf Fog of Discovery po tescie jazdy.
+- Udokumentowano ograniczenie iOS PWA: aplikacja nie odkrywa przejazdu przy zablokowanym ekranie, bo system wstrzymuje web/PWA w tle.
+
+# 1.4 - Smoke test iPhone PWA - 2026-06-23
+
+- Mobile UI Fix Pack smoke test na iPhone zakonczony pozytywnie. Przygotowano kolejny etap testow mapy, mgly i GPS.
 # Changelog MotoQuest
 
 # 1.4 - UI Premium Achievements & Ranking - 2026-06-20

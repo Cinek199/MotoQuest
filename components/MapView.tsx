@@ -17,8 +17,8 @@ import { useMotoQuestTracking } from "../lib/useMotoQuestTracking";
 
 const MAP_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const FOG_DRIFT_X = 0.0018;
-const FOG_DRIFT_Y = 0.0011;
+const FOG_DRIFT_X = 0.00058;
+const FOG_DRIFT_Y = 0.00036;
 const FOG_MAP_PARALLAX = 0.28;
 
 type ScreenPoint = {
@@ -678,7 +678,7 @@ function drawFogCanvas(
     width,
     height,
     textureOffset,
-    time * 0.36 + 9000,
+    time * 0.22 + 9000,
     0.42,
     1.08
   );
