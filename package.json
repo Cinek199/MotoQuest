@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "android:build": "cd android && gradlew.bat assembleDebug",
+    "android:build": "cd android && gradlew.bat assembleDebug && cd .. && node scripts/publish-latest-apk.cjs",
+    "android:publish-apk": "node scripts/publish-latest-apk.cjs",
     "android:sync": "cap sync android",
     "dev": "next dev",
     "build": "next build",

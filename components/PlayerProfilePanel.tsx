@@ -117,6 +117,7 @@ export default function PlayerProfilePanel({
   const lastTrip = trips[0] ?? null;
   const xpInLevel = stats.xp % 1000;
   const xpToNextLevel = Math.max(0, 1000 - xpInLevel);
+  const androidApkHref = "/downloads/motoquest-android-latest.apk";
 
   if (!isLoggedIn) {
     return (
@@ -362,6 +363,15 @@ export default function PlayerProfilePanel({
           <span className="mq-profile-shortcut-icon">U</span>
           <strong>Ustawienia</strong>
           <small>Konto, nick i preferencje</small>
+        </a>
+        <a
+          href={androidApkHref}
+          download="motoquest-android-latest.apk"
+          className="mq-profile-shortcut-card"
+        >
+          <span className="mq-profile-shortcut-icon">APK</span>
+          <strong>Pobierz APK</strong>
+          <small>Najnowsza wersja Android do instalacji</small>
         </a>
       </div>
 
